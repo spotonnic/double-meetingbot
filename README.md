@@ -74,6 +74,14 @@ I Xcode väljer du ditt team under *Signing & Capabilities*. Byt bundle-id om `c
 
 **Utanför möten** visar iPaden en viloskärm i Glanser-stil: "Ledig", styrsidans adress och status för basen och uppkopplingen. När någon skickar in roboten i ett möte från styrsidan byter den till Meet. "Lämna mötet" stänger samtalet och går tillbaka till viloskärmen.
 
+**Robotläge** är standard under möten. Den som ringer in visas i helskärm, och Meets knappar och den egna bilden döljs. Ljudet går som vanligt. Appen hittar videon genom att lyssna på WebRTC-strömmarna (`ios/DoubleMeet/RobotMode.js`), inte genom Meets sidstruktur. Därför tål läget att Google ändrar sitt gränssnitt. Saknas video, till exempel i väntrummet eller när kameran är av, syns Meets vanliga vy. På styrsidans Möte-flik går det att:
+
+- växla mellan Robotläge och Meet-vy
+- välja Fyll skärmen eller Hela bilden (bättre när någon delar skärm)
+- bläddra mellan deltagarna
+
+Med flera deltagare visas den största bilden. Meets egen markering av vem som pratar används inte.
+
 **Inställningar:** håll fingret 2 sekunder på viloskärmen, eller på statusraden under ett möte. Där finns också "Logga in roboten på Google", om roboten ska gå in i möten med ett eget Google-konto i stället för som gäst.
 
 Lägg till appen under *Inställningar → Hjälpmedel → Guidad åtkomst* och lås iPaden i appen, så kan ingen råka stänga den på kontoret.

@@ -10,6 +10,10 @@ struct Settings {
     var meetURL: String
     var guestName: String
     var controllerURL: String
+    /// "robot" shows the remote person full-screen, "meet" shows Meet's own layout.
+    var view: String
+    /// "cover" fills the screen, "contain" shows the whole picture (better for screen sharing).
+    var videoFit: String
 
     private static let defaults = UserDefaults.standard
     private static let prefix = "settings."
@@ -27,7 +31,9 @@ struct Settings {
             robotPassword: value("RobotPassword", ""),
             meetURL: value("MeetURL", "https://meet.google.com/"),
             guestName: value("GuestName", "Double"),
-            controllerURL: value("ControllerURL", "double-meetingbot-glanser.vercel.app")
+            controllerURL: value("ControllerURL", "double-meetingbot-glanser.vercel.app"),
+            view: value("View", "robot"),
+            videoFit: value("VideoFit", "cover")
         )
     }
 
@@ -41,6 +47,8 @@ struct Settings {
         d.set(meetURL, forKey: Settings.prefix + "MeetURL")
         d.set(guestName, forKey: Settings.prefix + "GuestName")
         d.set(controllerURL, forKey: Settings.prefix + "ControllerURL")
+        d.set(view, forKey: Settings.prefix + "View")
+        d.set(videoFit, forKey: Settings.prefix + "VideoFit")
     }
 
     var isRealtimeConfigured: Bool {

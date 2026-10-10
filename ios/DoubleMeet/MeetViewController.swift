@@ -27,6 +27,8 @@ final class MeetViewController: UIViewController {
     private let idleView = IdleView()
     private let doneButton = BrandButton(title: "Klar", style: .primary)
     private var isSigningIn = false
+    private var speakerName = ""
+    private var speakerShown = false
 
     // MARK: - Lifecycle
 
@@ -77,6 +79,7 @@ final class MeetViewController: UIViewController {
         // Present as desktop Safari; Google rejects unknown embedded browsers.
         config.applicationNameForUserAgent = "Version/17.4 Safari/605.1.15"
         config.defaultWebpagePreferences.preferredContentMode = .desktop
+        installRobotMode(in: config.userContentController)
 
         webView = WKWebView(frame: view.bounds, configuration: config)
         webView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
@@ -84,6 +87,25 @@ final class MeetViewController: UIViewController {
         webView.navigationDelegate = self
         webView.scrollView.contentInsetAdjustmentBehavior = .never
         view.addSubview(webView)
+    }
+
+    /// Injects RobotMode.js into Meet: shows the remote person full-screen instead of Meet's UI.
+    private func installRobotMode(in controller: WKUserContentController) {
+        guard let url = Bundle.main.url(forResource: "RobotMode", withExtension: "js"),
+              let source = try? String(contentsOf: url) else {
+            NSLog("[robot-mode] RobotMode.js missing from bundle")
+            return
+        }
+        let enabled = settings.view == "robot" ? "true" : "false"
+        let fit = settings.videoFit == "contain" ? "contain" : "cover"
+        let prelude = "window.__doubleRobotConfig = { enabled: \(enabled), fit: '\(fit)' };\n"
+        controller.addUserScript(WKUserScript(source: prelude + source, injectionTime: .atDocumentStart,
+                                              forMainFrameOnly: true))
+        controller.add(WeakScriptHandler(self), name: "doubleRobot")
+    }
+
+    private func robotModeCall(_ js: String) {
+        webView.evaluateJavaScript("window.__doubleRobot && window.__doubleRobot.\(js)", completionHandler: nil)
     }
 
     private func setUpIdleView() {
@@ -188,6 +210,20 @@ final class MeetViewController: UIViewController {
             if let url = payload["url"] as? String { enterMeeting(url) }
         case "leave":
             leaveMeeting()
+        case "view":
+            let mode = payload["mode"] as? String == "meet" ? "meet" : "robot"
+            settings.view = mode
+            settings.save()
+            robotModeCall("setEnabled(\(mode == "robot"))")
+        case "fit":
+            let fit = payload["fit"] as? String == "contain" ? "contain" : "cover"
+            settings.videoFit = fit
+            settings.save()
+            robotModeCall("setFit('\(fit)')")
+        case "next":
+            robotModeCall("next()")
+        case "auto":
+            robotModeCall("auto()")
         case "join":
             startAutoJoin()
         case "reload":
@@ -234,6 +270,10 @@ final class MeetViewController: UIViewController {
             "kickstand": robot.kickstand.rawValue,
             "meet": webView.url?.absoluteString ?? "",
             "screen": isSigningIn ? "signin" : (idleView.isHidden ? "meeting" : "idle"),
+            "view": settings.view,
+            "fit": settings.videoFit,
+            "speakerShown": speakerShown,
+            "speaker": speakerName,
             "ts": Int(Date().timeIntervalSince1970 * 1000),
         ]
         if let firmware = robot.firmwareVersion { status["firmware"] = firmware }
@@ -298,6 +338,8 @@ final class MeetViewController: UIViewController {
 
     private func showIdle() {
         isSigningIn = false
+        speakerShown = false
+        speakerName = ""
         doneButton.isHidden = true
         // Unloading the page ends the call and releases camera and microphone.
         webView.load(URLRequest(url: URL(string: "about:blank")!))
@@ -383,6 +425,26 @@ final class MeetViewController: UIViewController {
     }
 }
 
+// MARK: - Robot mode messages
+
+extension MeetViewController: WKScriptMessageHandler {
+    func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+        guard message.name == "doubleRobot", let body = message.body as? [String: Any] else { return }
+        speakerShown = body["active"] as? Bool ?? false
+        speakerName = body["name"] as? String ?? ""
+        publishStatus()
+    }
+}
+
+/// WKUserContentController retains its handlers; this breaks the cycle with the view controller.
+private final class WeakScriptHandler: NSObject, WKScriptMessageHandler {
+    weak var target: WKScriptMessageHandler?
+    init(_ target: WKScriptMessageHandler) { self.target = target }
+    func userContentController(_ controller: WKUserContentController, didReceive message: WKScriptMessage) {
+        target?.userContentController(controller, didReceive: message)
+    }
+}
+
 // MARK: - DMRobotDelegate
 
 extension MeetViewController: DMRobotDelegate {
@@ -409,6 +471,9 @@ extension MeetViewController: WKUIDelegate, WKNavigationDelegate {
     }
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        // The injected script starts from the settings captured at launch; re-apply the current ones.
+        robotModeCall("setEnabled(\(settings.view == "robot"))")
+        robotModeCall("setFit('\(settings.videoFit == "contain" ? "contain" : "cover")')")
         if !isSigningIn, webView.url?.host == "meet.google.com", webView.url?.path.count ?? 0 > 1 {
             startAutoJoin()
         }

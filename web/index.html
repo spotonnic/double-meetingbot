@@ -97,6 +97,7 @@
   .joy.active .knob { background: var(--yellow); transition: background 200ms var(--ease); }
   .joy.disabled { opacity: 0.4; }
   .segmented { display: grid; grid-template-columns: repeat(3, 1fr); background: var(--navy); border: 1px solid var(--skiffer); border-radius: 8px; padding: 4px; gap: 4px; }
+  .segmented.two { grid-template-columns: 1fr 1fr; }
   .segmented button { min-height: 44px; border-radius: 4px; font-weight: 500; color: var(--fog); transition: background 200ms var(--ease), color 200ms var(--ease); }
   .segmented button[aria-pressed=true] { background: var(--cream); color: var(--navy); }
   .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -322,6 +323,24 @@
           <button class="btn" id="btn-reload">Ladda om</button>
         </div>
         <button class="btn danger block" id="btn-leave">Lämna mötet</button>
+      </section>
+
+      <section class="card" data-panel="meet" id="panel-view">
+        <div class="mono muted">Bild på roboten</div>
+        <div class="current" id="txt-view">–</div>
+        <div class="segmented two" id="seg-view" role="group" aria-label="Vy">
+          <button data-view="robot" aria-pressed="true">Robotläge</button>
+          <button data-view="meet" aria-pressed="false">Meet-vy</button>
+        </div>
+        <div class="segmented two" id="seg-fit" role="group" aria-label="Bildformat">
+          <button data-fit="cover" aria-pressed="true">Fyll skärmen</button>
+          <button data-fit="contain" aria-pressed="false">Hela bilden</button>
+        </div>
+        <div class="row2">
+          <button class="btn" id="btn-next">Nästa person</button>
+          <button class="btn" id="btn-auto">Automatiskt</button>
+        </div>
+        <p class="kbd-hint" style="display:block">Robotläget visar den som ringer in i helskärm. Med flera i mötet visas den största bilden. Välj Hela bilden när någon delar skärm.</p>
       </section>
 
       <section class="card" data-panel="status" id="panel-status">
@@ -561,6 +580,7 @@
       if (s.robot) chips.appendChild(chip(kick));
       if (s.meeting) chips.appendChild(chip('Möte ' + s.meeting, 'accent'));
       if (driver) chips.appendChild(chip(driver === me.email ? 'Du kör' : shortName(driver) + ' kör'));
+      if (s.meeting && s.speakerShown && s.speaker) chips.appendChild(chip('Visar ' + s.speaker));
     }
 
     $('f-driver').textContent = driver ? (driver === me.email ? 'Du' : shortName(driver)) + ', sedan ' + duration(s.driverSince) : (fresh ? 'Ledig' : '–');
@@ -600,6 +620,16 @@
     kickBtn.textContent = s.kickstand === 1 ? 'Fäll in stöden' : 'Parkera';
     kickBtn.dataset.action = s.kickstand === 1 ? 'unpark' : 'park';
     $('btn-meet').disabled = !fresh;
+
+    var inMeeting = fresh && s.meeting;
+    $('txt-view').textContent = !inMeeting ? 'Inte i något möte'
+      : s.view === 'meet' ? 'Meets vanliga vy'
+      : s.speakerShown ? 'Visar ' + (s.speaker || 'den som ringer in')
+      : 'Väntar på video från någon i mötet';
+    document.querySelectorAll('[data-view]').forEach(function (b) { b.setAttribute('aria-pressed', String((s.view || 'robot') === b.dataset.view)); b.disabled = !fresh; });
+    document.querySelectorAll('[data-fit]').forEach(function (b) { b.setAttribute('aria-pressed', String((s.fit || 'cover') === b.dataset.fit)); b.disabled = !fresh || s.view === 'meet'; });
+    $('btn-next').disabled = !inMeeting || s.view === 'meet';
+    $('btn-auto').disabled = !inMeeting || s.view === 'meet';
   }
   setInterval(render, 1000);
 
@@ -731,6 +761,15 @@
   $('btn-leave').addEventListener('click', function () {
     if (confirm('Lämna mötet? Roboten går tillbaka till viloskärmen.') && send('leave', {})) toast('Roboten lämnar mötet');
   });
+  document.querySelectorAll('[data-view]').forEach(function (b) {
+    b.addEventListener('click', function () { if (send('view', { mode: b.dataset.view })) toast(b.dataset.view === 'robot' ? 'Robotläge på' : 'Meets vanliga vy'); });
+  });
+  document.querySelectorAll('[data-fit]').forEach(function (b) {
+    b.addEventListener('click', function () { send('fit', { fit: b.dataset.fit }); });
+  });
+  $('btn-next').addEventListener('click', function () { if (send('next', {})) toast('Visar nästa person'); });
+  $('btn-auto').addEventListener('click', function () { if (send('auto', {})) toast('Väljer automatiskt'); });
+
   $('btn-kick').addEventListener('click', function () {
     var action = $('btn-kick').dataset.action || 'park';
     if (send(action, {})) toast(action === 'park' ? 'Parkerar' : 'Fäller in stöden');

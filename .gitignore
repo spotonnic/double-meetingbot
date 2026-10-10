@@ -1,0 +1,6 @@
+.DS_Store
+ios/DoubleMeet/Config.plist
+ios/*.xcodeproj/
+xcuserdata/
+DerivedData/
+build/

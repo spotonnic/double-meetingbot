@@ -1,0 +1,39 @@
+# Generate the Xcode project with: xcodegen generate
+name: DoubleMeet
+options:
+  bundleIdPrefix: com.glanser
+  deploymentTarget:
+    iOS: "15.0"
+targets:
+  DoubleMeet:
+    type: application
+    platform: iOS
+    sources:
+      - path: DoubleMeet
+        excludes:
+          - Info.plist
+          - Config.plist
+          - Config.example.plist
+      - path: DoubleMeet/Config.plist
+        optional: true
+        buildPhase: resources
+    dependencies:
+      # Static library packaged as a framework (armv7 + arm64, no simulator slice).
+      - framework: Vendor/DoubleControlSDK.framework
+        embed: false
+      - sdk: ExternalAccessory.framework
+      - sdk: WebKit.framework
+      - sdk: AVFoundation.framework
+      - sdk: QuartzCore.framework
+    settings:
+      base:
+        INFOPLIST_FILE: DoubleMeet/Info.plist
+        PRODUCT_BUNDLE_IDENTIFIER: com.glanser.doublemeet
+        SWIFT_OBJC_BRIDGING_HEADER: DoubleMeet/DoubleMeet-Bridging-Header.h
+        SWIFT_VERSION: "5.0"
+        TARGETED_DEVICE_FAMILY: "2"
+        FRAMEWORK_SEARCH_PATHS: ["$(inherited)", "$(PROJECT_DIR)/Vendor"]
+        OTHER_LDFLAGS: ["$(inherited)", "-ObjC"]
+        ENABLE_BITCODE: NO
+        CODE_SIGN_STYLE: Automatic
+        GENERATE_INFOPLIST_FILE: NO

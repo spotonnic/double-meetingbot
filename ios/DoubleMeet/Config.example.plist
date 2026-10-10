@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Copy to Config.plist (gitignored) before running xcodegen. Every value can also be changed in the app: hold the status pill for 2 seconds. -->
+<plist version="1.0">
+<dict>
+	<key>SupabaseURL</key>
+	<string>https://YOUR-PROJECT.supabase.co</string>
+	<key>SupabaseKey</key>
+	<string>YOUR-ANON-OR-PUBLISHABLE-KEY</string>
+	<key>Room</key>
+	<string>double-CHANGE-ME-TO-A-LONG-RANDOM-STRING</string>
+	<key>MeetURL</key>
+	<string>https://meet.google.com/</string>
+	<key>GuestName</key>
+	<string>Double</string>
+</dict>
+</plist>

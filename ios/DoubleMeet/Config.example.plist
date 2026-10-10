@@ -13,9 +13,9 @@
 	<string>ROBOT-ACCOUNT-EMAIL</string>
 	<key>RobotPassword</key>
 	<string>ROBOT-ACCOUNT-PASSWORD</string>
-	<key>MeetURL</key>
-	<string>https://meet.google.com/</string>
 	<key>GuestName</key>
 	<string>Double</string>
+	<key>ControllerURL</key>
+	<string>double-meetingbot-glanser.vercel.app</string>
 </dict>
 </plist>

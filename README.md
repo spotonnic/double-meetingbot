@@ -72,13 +72,17 @@ I Xcode väljer du ditt team under *Signing & Capabilities*. Byt bundle-id om `c
 - Med ett gratis Apple-ID slutar appen fungera efter 7 dagar och måste byggas om. Med ett betalt utvecklarkonto gäller den i ett år.
 - Första gången frågar iPaden om kamera och mikrofon. Svara Tillåt.
 
-Alla inställningar kan ändras i appen utan ombyggnad: **håll fingret 2 sekunder på statusrutan** längst ned till vänster.
+**Utanför möten** visar iPaden en viloskärm i Glanser-stil: "Ledig", styrsidans adress och status för basen och uppkopplingen. När någon skickar in roboten i ett möte från styrsidan byter den till Meet. "Lämna mötet" stänger samtalet och går tillbaka till viloskärmen.
+
+**Inställningar:** håll fingret 2 sekunder på viloskärmen, eller på statusraden under ett möte. Där finns också "Logga in roboten på Google", om roboten ska gå in i möten med ett eget Google-konto i stället för som gäst.
 
 Lägg till appen under *Inställningar → Hjälpmedel → Guidad åtkomst* och lås iPaden i appen, så kan ingen råka stänga den på kontoret.
 
 ## 4. Styrsidan
 
 `web/` publiceras som en statisk sajt på Vercel. Fyll i projektets URL och publishable key i `web/config.js`. Nyckeln är publik; skyddet ligger i inloggningen och databasreglerna.
+
+Sidan är byggd för mobilen först. Där finns tre flikar längst ned: **Kör** (joystick, fart, höjd, parkering och stopp), **Möte** (skicka in roboten, gå med, lämna) och **Status**. På dator visas allt på en gång. Det går att klistra in en hel Meet-länk eller bara mötes-koden (abc-defg-hij).
 
 Sidan visar:
 

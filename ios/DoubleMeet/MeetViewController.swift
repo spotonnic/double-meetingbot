@@ -3,6 +3,7 @@ import UIKit
 import WebKit
 
 /// Full-screen Google Meet in a WKWebView, with the robot driven over a Supabase Realtime channel.
+/// Outside meetings the robot shows a branded idle screen instead of Meet.
 final class MeetViewController: UIViewController {
     private var settings = Settings.load()
     private let robot = DMRobot()
@@ -23,20 +24,25 @@ final class MeetViewController: UIViewController {
 
     private var webView: WKWebView!
     private let statusPill = UILabel()
+    private let idleView = IdleView()
+    private let doneButton = BrandButton(title: "Klar", style: .primary)
+    private var isSigningIn = false
 
     // MARK: - Lifecycle
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        view.backgroundColor = .black
+        view.backgroundColor = Brand.navy
         configureAudioSession()
         setUpWebView()
+        setUpIdleView()
         setUpStatusPill()
+        setUpDoneButton()
 
         robot.delegate = self
         robot.start()
         connectChannel()
-        loadMeet(settings.meetURL)
+        if settings.isInMeeting { enterMeeting(settings.meetURL) } else { showIdle() }
 
         statusTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
             self?.publishStatus()
@@ -80,11 +86,32 @@ final class MeetViewController: UIViewController {
         view.addSubview(webView)
     }
 
+    private func setUpIdleView() {
+        idleView.frame = view.bounds
+        idleView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        view.addSubview(idleView)
+        let hold = UILongPressGestureRecognizer(target: self, action: #selector(showSettings(_:)))
+        hold.minimumPressDuration = 2
+        idleView.addGestureRecognizer(hold)
+    }
+
+    private func setUpDoneButton() {
+        doneButton.isHidden = true
+        doneButton.translatesAutoresizingMaskIntoConstraints = false
+        doneButton.addTarget(self, action: #selector(finishSignIn), for: .touchUpInside)
+        view.addSubview(doneButton)
+        NSLayoutConstraint.activate([
+            doneButton.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -24),
+            doneButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -24),
+            doneButton.widthAnchor.constraint(greaterThanOrEqualToConstant: 140),
+        ])
+    }
+
     private func setUpStatusPill() {
-        statusPill.font = .monospacedSystemFont(ofSize: 13, weight: .medium)
-        statusPill.textColor = .white
-        statusPill.backgroundColor = UIColor.black.withAlphaComponent(0.55)
-        statusPill.layer.cornerRadius = 12
+        statusPill.font = Brand.mono(13, .medium)
+        statusPill.textColor = Brand.cream
+        statusPill.backgroundColor = Brand.navy.withAlphaComponent(0.88)
+        statusPill.layer.cornerRadius = 8
         statusPill.layer.masksToBounds = true
         statusPill.textAlignment = .center
         statusPill.isUserInteractionEnabled = true
@@ -93,7 +120,7 @@ final class MeetViewController: UIViewController {
         NSLayoutConstraint.activate([
             statusPill.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 12),
             statusPill.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -12),
-            statusPill.heightAnchor.constraint(equalToConstant: 26),
+            statusPill.heightAnchor.constraint(equalToConstant: 32),
         ])
         let hold = UILongPressGestureRecognizer(target: self, action: #selector(showSettings(_:)))
         hold.minimumPressDuration = 2
@@ -158,11 +185,9 @@ final class MeetViewController: UIViewController {
         case "unpark":
             robot.unpark()
         case "meet":
-            if let url = payload["url"] as? String {
-                settings.meetURL = url
-                settings.save()
-                loadMeet(url)
-            }
+            if let url = payload["url"] as? String { enterMeeting(url) }
+        case "leave":
+            leaveMeeting()
         case "join":
             startAutoJoin()
         case "reload":
@@ -208,6 +233,7 @@ final class MeetViewController: UIViewController {
             "pole": robot.poleHeightPercent,
             "kickstand": robot.kickstand.rawValue,
             "meet": webView.url?.absoluteString ?? "",
+            "screen": isSigningIn ? "signin" : (idleView.isHidden ? "meeting" : "idle"),
             "ts": Int(Date().timeIntervalSince1970 * 1000),
         ]
         if let firmware = robot.firmwareVersion { status["firmware"] = firmware }
@@ -226,16 +252,23 @@ final class MeetViewController: UIViewController {
     }
 
     private func updateStatusPill() {
-        let base = robot.connected ? "Bas ✓ \(Int(batteryPercentForDisplay))%" : "Bas –"
+        let linkOK = channel?.isJoined ?? false
         let link: String
         if !settings.isRealtimeConfigured {
-            link = "Styrning: ej konfigurerad"
+            link = "Styrning ej konfigurerad"
         } else if authError != nil {
-            link = "Styrning: inloggning misslyckades"
+            link = "Inloggningen misslyckades"
         } else {
-            link = (channel?.isJoined ?? false) ? "Styrning ✓" : "Styrning …"
+            link = linkOK ? "Styrning online" : "Ansluter styrning"
         }
-        statusPill.text = "  \(base)  ·  \(link)  "
+        let battery = Int(batteryPercentForDisplay)
+        let base = robot.connected ? "BAS \(battery)%" : "BAS SAKNAS"
+        statusPill.text = "   \(base)  ·  \(link.uppercased())   "
+        statusPill.textColor = robot.connected && linkOK ? Brand.cream : Brand.terrakotta
+
+        idleView.update(IdleView.State(baseConnected: robot.connected, battery: battery,
+                                       charging: robot.batteryIsCharging, linkText: link, linkOK: linkOK,
+                                       controllerURL: settings.controllerURL))
     }
 
     private var batteryPercentForDisplay: Float {
@@ -245,10 +278,56 @@ final class MeetViewController: UIViewController {
 
     // MARK: - Meet
 
-    private func loadMeet(_ string: String) {
+    private func enterMeeting(_ string: String) {
         guard let url = URL(string: string.trimmingCharacters(in: .whitespaces)),
-              url.scheme == "https" else { return }
+              url.scheme == "https", url.host == "meet.google.com" else { return }
+        settings.meetURL = url.absoluteString
+        settings.save()
+        isSigningIn = false
+        doneButton.isHidden = true
         webView.load(URLRequest(url: url))
+        setIdleVisible(false)
+    }
+
+    private func leaveMeeting() {
+        autoJoinTimer?.invalidate()
+        settings.meetURL = ""
+        settings.save()
+        showIdle()
+    }
+
+    private func showIdle() {
+        isSigningIn = false
+        doneButton.isHidden = true
+        // Unloading the page ends the call and releases camera and microphone.
+        webView.load(URLRequest(url: URL(string: "about:blank")!))
+        setIdleVisible(true)
+    }
+
+    private func setIdleVisible(_ visible: Bool) {
+        statusPill.isHidden = visible
+        UIView.animate(withDuration: 0.4, delay: 0, options: [.curveEaseOut]) {
+            self.idleView.alpha = visible ? 1 : 0
+        } completion: { _ in
+            self.idleView.isHidden = !visible
+        }
+        if visible { idleView.isHidden = false }
+        updateStatusPill()
+        publishStatus()
+    }
+
+    /// Lets someone sign the robot's browser in to Google once, so it joins as a named account.
+    private func startGoogleSignIn() {
+        isSigningIn = true
+        webView.load(URLRequest(url: URL(string: "https://accounts.google.com/ServiceLogin?continue=https://meet.google.com/")!))
+        setIdleVisible(false)
+        statusPill.isHidden = true
+        doneButton.isHidden = false
+        view.bringSubviewToFront(doneButton)
+    }
+
+    @objc private func finishSignIn() {
+        if settings.isInMeeting { enterMeeting(settings.meetURL) } else { showIdle() }
     }
 
     /// Best effort: fill in the guest name and press "Join now" / "Ask to join" for up to 60 s.
@@ -291,46 +370,16 @@ final class MeetViewController: UIViewController {
 
     @objc private func showSettings(_ gesture: UILongPressGestureRecognizer) {
         guard gesture.state == .began, presentedViewController == nil else { return }
-        let alert = UIAlertController(title: "Inställningar", message: nil, preferredStyle: .alert)
-        let fields: [(String, String)] = [
-            ("Supabase URL", settings.supabaseURL),
-            ("Supabase-nyckel", settings.supabaseKey),
-            ("Rum", settings.room),
-            ("Robotkontots e-post", settings.robotEmail),
-            ("Robotkontots lösenord", settings.robotPassword),
-            ("Meet-länk", settings.meetURL),
-            ("Gästnamn", settings.guestName),
-        ]
-        for (placeholder, value) in fields {
-            alert.addTextField { field in
-                field.placeholder = placeholder
-                field.text = value
-                field.autocapitalizationType = .none
-                field.autocorrectionType = .no
-                field.clearButtonMode = .whileEditing
-                field.isSecureTextEntry = placeholder.contains("lösenord")
-            }
-        }
-        alert.addAction(UIAlertAction(title: "Avbryt", style: .cancel))
-        alert.addAction(UIAlertAction(title: "Spara", style: .default) { [weak self, weak alert] _ in
-            guard let self = self, let values = alert?.textFields?.map({ $0.text ?? "" }), values.count == 7 else { return }
-            let meetChanged = values[5] != self.settings.meetURL
-            self.settings.supabaseURL = values[0].trimmingCharacters(in: .whitespaces)
-            self.settings.supabaseKey = values[1].trimmingCharacters(in: .whitespaces)
-            self.settings.room = values[2].trimmingCharacters(in: .whitespaces)
-            self.settings.robotEmail = values[3].trimmingCharacters(in: .whitespaces)
-            self.settings.robotPassword = values[4]
-            self.settings.meetURL = values[5].trimmingCharacters(in: .whitespaces)
-            self.settings.guestName = values[6]
+        let sheet = SettingsViewController(settings: settings)
+        sheet.onSave = { [weak self] updated in
+            guard let self = self else { return }
+            self.settings = updated
             self.settings.save()
             self.connectChannel()
-            if meetChanged { self.loadMeet(self.settings.meetURL) }
-        })
-        alert.addAction(UIAlertAction(title: "Ladda om Meet", style: .default) { [weak self] _ in
-            guard let self = self else { return }
-            self.loadMeet(self.settings.meetURL)
-        })
-        present(alert, animated: true)
+        }
+        sheet.onGoogleSignIn = { [weak self] in self?.startGoogleSignIn() }
+        sheet.onLeaveMeeting = { [weak self] in self?.leaveMeeting() }
+        present(sheet, animated: true)
     }
 }
 
@@ -360,7 +409,7 @@ extension MeetViewController: WKUIDelegate, WKNavigationDelegate {
     }
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-        if webView.url?.host == "meet.google.com", webView.url?.path.count ?? 0 > 1 {
+        if !isSigningIn, webView.url?.host == "meet.google.com", webView.url?.path.count ?? 0 > 1 {
             startAutoJoin()
         }
     }

@@ -2,114 +2,360 @@
 <html lang="sv">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-<title>Double-styrning</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1A2332">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Double · Glanser</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #f4f4f1; --panel: #ffffff; --text: #16181d; --muted: #6b6f78; --line: #dedfe3;
-    --accent: #1f5eff; --ok: #1a8f4c; --warn: #b7791f; --bad: #c0392b; --pressed: #dce6ff;
+    --navy: #1A2332; --navy-light: #2D3848; --cream: #F8F6F2; --yellow: #E8FF00;
+    --oakwood: #D6C5B0; --fog: #7A8C99; --skiffer: #455060; --terrakotta: #E8AFA1;
+    --line: rgba(248, 246, 242, 0.10);
+    --sans: 'Space Grotesk', system-ui, sans-serif;
+    --mono: 'DM Mono', ui-monospace, monospace;
+    --ease: cubic-bezier(0.16, 1, 0.3, 1);
+    --tabbar: 72px;
+    color-scheme: dark;
   }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #121317; --panel: #1b1d22; --text: #ececee; --muted: #9a9ea8; --line: #2c2f36;
-      --accent: #6d95ff; --ok: #43c37b; --warn: #e0a84a; --bad: #ff6b5e; --pressed: #263457;
-    }
-  }
-  * { box-sizing: border-box; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
   [hidden] { display: none !important; }
-  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-  main { max-width: 560px; margin: 0 auto; padding: 16px; display: grid; gap: 14px; }
-  header { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
-  h1 { font-size: 18px; margin: 4px 0 0; }
-  .who { font-size: 13px; color: var(--muted); }
-  .who button { padding: 4px 8px; font-size: 13px; margin-left: 6px; }
-  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
-  .facts { display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; margin: 0; font-size: 14px; }
-  .facts dt { color: var(--muted); }
-  .facts dd { margin: 0; overflow-wrap: anywhere; }
-  .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--muted); margin-right: 6px; vertical-align: 1px; }
-  .dot.ok { background: var(--ok); } .dot.warn { background: var(--warn); } .dot.bad { background: var(--bad); }
-  .banner { border-radius: 10px; padding: 10px 12px; background: var(--pressed); font-size: 14px; }
-  .banner.bad { background: color-mix(in srgb, var(--bad) 18%, var(--panel)); }
-  .pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; max-width: 300px; margin: 0 auto; }
-  button { font: inherit; color: var(--text); background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px; cursor: pointer; touch-action: none; user-select: none; -webkit-user-select: none; }
-  button:hover:not(:disabled) { border-color: var(--accent); }
-  button:disabled { opacity: .45; cursor: not-allowed; }
-  button.active { background: var(--pressed); border-color: var(--accent); }
-  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-  .pad button { height: 72px; font-size: 22px; }
-  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-  .row > * { flex: 1 1 auto; }
-  label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 4px; }
-  input[type=text] { width: 100%; font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
-  input[type=range] { width: 100%; }
-  .hint { color: var(--muted); font-size: 13px; margin: 0; }
-  .grid { display: grid; gap: 10px; }
-  kbd { font: 12px ui-monospace, monospace; border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; }
-  .login { text-align: center; padding: 32px 16px; display: grid; gap: 14px; justify-items: center; }
+  html, body { background: var(--navy); color: var(--cream); }
+  body { font: 16px/1.5 var(--sans); -webkit-font-smoothing: antialiased; min-height: 100dvh; -webkit-tap-highlight-color: transparent; }
+  button, input { font: inherit; color: inherit; }
+  button { cursor: pointer; border: 0; background: none; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--yellow); outline-offset: 2px; }
+  svg { display: block; }
+
+  .mono { font-family: var(--mono); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 500; }
+  .muted { color: var(--fog); }
+  h1 { font-size: clamp(36px, 9vw, 64px); line-height: 1.05; font-weight: 700; letter-spacing: -0.02em; }
+  h2 { font-size: clamp(28px, 6vw, 40px); line-height: 1.1; font-weight: 700; letter-spacing: -0.02em; }
+
+  /* ---------- Buttons ---------- */
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 52px; padding: 0 20px; border-radius: 8px; font-weight: 600; background: var(--navy-light); border: 1px solid var(--skiffer); transition: transform 200ms var(--ease), background 200ms var(--ease), border-color 200ms var(--ease); }
+  .btn:hover:not(:disabled) { border-color: var(--fog); }
+  .btn:active:not(:disabled) { transform: scale(0.98); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn.primary { background: var(--yellow); color: var(--navy); border-color: var(--yellow); }
+  .btn.primary:hover:not(:disabled) { border-color: var(--yellow); transform: translateY(-1px); }
+  .btn.danger { color: var(--terrakotta); border-color: rgba(232, 175, 161, 0.45); }
+  .btn.block { width: 100%; }
+  .btn.held { background: var(--cream); color: var(--navy); border-color: var(--cream); }
+
+  /* ---------- Login ---------- */
+  .login { min-height: 100dvh; display: grid; place-items: center; padding: 32px 24px; }
+  .login-inner { max-width: 420px; width: 100%; display: grid; gap: 24px; }
+  .login .logo { width: 160px; }
+  .login .stars { width: 72px; justify-self: end; margin-bottom: -24px; opacity: 0.9; }
+  .login p { color: rgba(248, 246, 242, 0.75); }
+  .login .error { color: var(--terrakotta); font-size: 14px; min-height: 1.5em; }
+
+  /* ---------- App shell ---------- */
+  .topbar { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: calc(env(safe-area-inset-top) + 12px) 16px 12px; background: rgba(26, 35, 50, 0.92); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .brand .logo { width: 120px; }
+  .brand .tag { padding: 4px 8px; border: 1px solid var(--skiffer); border-radius: 4px; color: var(--fog); }
+  .avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--navy-light); border: 1px solid var(--skiffer); font-family: var(--mono); font-size: 13px; font-weight: 500; }
+  .menu { position: absolute; right: 16px; top: calc(100% + 8px); background: var(--navy-light); border: 1px solid var(--skiffer); border-radius: 12px; padding: 16px; min-width: 240px; display: grid; gap: 12px; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35); }
+
+  main { max-width: 1120px; margin: 0 auto; padding: 16px 16px calc(var(--tabbar) + env(safe-area-inset-bottom) + 24px); display: grid; gap: 16px; }
+  .card { background: var(--navy-light); border: 1px solid var(--line); border-radius: 12px; padding: 20px; display: grid; gap: 16px; align-content: start; }
+
+  /* Hero status */
+  .hero { gap: 12px; }
+  .hero-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .hero h2 { display: flex; align-items: center; gap: 12px; }
+  .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--skiffer); flex: none; }
+  .dot.ok { background: var(--yellow); box-shadow: 0 0 0 0 rgba(232, 255, 0, 0.5); animation: pulse 2.4s var(--ease) infinite; }
+  .dot.warn { background: var(--oakwood); }
+  .dot.bad { background: var(--terrakotta); }
+  @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(232, 255, 0, 0.45); } 70% { box-shadow: 0 0 0 10px rgba(232, 255, 0, 0); } 100% { box-shadow: 0 0 0 0 rgba(232, 255, 0, 0); } }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { padding: 6px 10px; border-radius: 4px; background: rgba(248, 246, 242, 0.06); border: 1px solid var(--line); font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }
+  .chip.accent { border-color: var(--yellow); color: var(--yellow); }
+  .chip.risk { border-color: rgba(232, 175, 161, 0.5); color: var(--terrakotta); }
+
+  .banner { border-radius: 8px; padding: 12px 14px; font-size: 14px; background: rgba(214, 197, 176, 0.12); border: 1px solid rgba(214, 197, 176, 0.35); color: var(--oakwood); }
+  .banner.bad { background: rgba(232, 175, 161, 0.10); border-color: rgba(232, 175, 161, 0.4); color: var(--terrakotta); }
+
+  /* Drive */
+  .joy-wrap { display: grid; justify-items: center; gap: 12px; padding: 8px 0; }
+  .joy { position: relative; width: min(64vw, 36dvh, 280px); aspect-ratio: 1; border-radius: 50%; touch-action: none; user-select: none; -webkit-user-select: none;
+         background: radial-gradient(circle at center, rgba(248, 246, 242, 0.05) 0 38%, transparent 38.5%), var(--navy); border: 1px solid var(--skiffer); }
+  .joy::before, .joy::after { content: ''; position: absolute; background: var(--line); }
+  .joy::before { left: 50%; top: 12%; bottom: 12%; width: 1px; }
+  .joy::after { top: 50%; left: 12%; right: 12%; height: 1px; }
+  .joy .arrow { position: absolute; color: var(--fog); font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; }
+  .joy .n { top: 8px; left: 50%; transform: translateX(-50%); } .joy .s { bottom: 8px; left: 50%; transform: translateX(-50%); }
+  .joy .w { left: 10px; top: 50%; transform: translateY(-50%); } .joy .e { right: 10px; top: 50%; transform: translateY(-50%); }
+  .knob { position: absolute; left: 50%; top: 50%; width: 34%; aspect-ratio: 1; border-radius: 50%; transform: translate(-50%, -50%); background: var(--cream); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4); transition: transform 200ms var(--ease), background 200ms var(--ease); z-index: 1; }
+  .joy.active .knob { background: var(--yellow); transition: background 200ms var(--ease); }
+  .joy.disabled { opacity: 0.4; }
+  .segmented { display: grid; grid-template-columns: repeat(3, 1fr); background: var(--navy); border: 1px solid var(--skiffer); border-radius: 8px; padding: 4px; gap: 4px; }
+  .segmented button { min-height: 44px; border-radius: 4px; font-weight: 500; color: var(--fog); transition: background 200ms var(--ease), color 200ms var(--ease); }
+  .segmented button[aria-pressed=true] { background: var(--cream); color: var(--navy); }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .stop { min-height: 60px; font-size: 18px; }
+  .kbd-hint { font-size: 13px; color: var(--fog); }
+  kbd { font-family: var(--mono); font-size: 11px; border: 1px solid var(--skiffer); border-radius: 4px; padding: 1px 6px; color: var(--cream); }
+
+  /* Meeting */
+  label.field { display: grid; gap: 8px; }
+  input[type=url] { width: 100%; min-height: 52px; padding: 0 14px; border-radius: 8px; background: var(--navy); border: 1px solid var(--skiffer); color: var(--cream); font-size: 16px; }
+  input::placeholder { color: var(--fog); }
+  .current { font-size: 20px; font-weight: 600; }
+
+  /* Status list */
+  .facts { display: grid; grid-template-columns: max-content 1fr; gap: 12px 20px; }
+  .facts dt { color: var(--fog); }
+  .facts dd { overflow-wrap: anywhere; }
+  .people { display: flex; flex-wrap: wrap; gap: 6px; }
+
+  /* Tab bar (mobile) */
+  .tabbar { position: fixed; z-index: 20; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: repeat(3, 1fr); padding: 8px 8px calc(env(safe-area-inset-bottom) + 8px); background: rgba(26, 35, 50, 0.96); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-top: 1px solid var(--line); }
+  .tabbar button { display: grid; justify-items: center; gap: 4px; padding: 6px 0; min-height: 56px; color: var(--fog); border-radius: 8px; }
+  .tabbar button[aria-selected=true] { color: var(--cream); }
+  .tabbar button[aria-selected=true] .tab-ind { background: var(--yellow); }
+  .tab-ind { width: 20px; height: 3px; border-radius: 2px; background: transparent; transition: background 200ms var(--ease); }
+  .tabbar svg { width: 22px; height: 22px; }
+
+  .toast { position: fixed; z-index: 30; left: 50%; bottom: calc(var(--tabbar) + env(safe-area-inset-bottom) + 16px); transform: translate(-50%, 20px); opacity: 0; background: var(--cream); color: var(--navy); padding: 12px 16px; border-radius: 8px; font-weight: 500; transition: all 400ms var(--ease); pointer-events: none; max-width: calc(100vw - 32px); }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+  /* Mobile: one panel at a time */
+  @media (max-width: 959px) {
+    [data-panel]:not(.current-panel) { display: none; }
+    .hero { padding: 16px; }
+    .hero h2 { font-size: 28px; }
+    .card { padding: 16px; gap: 14px; }
+    .kbd-hint { display: none; }
+  }
+  /* Desktop: everything visible, no tab bar */
+  @media (min-width: 960px) {
+    .tabbar { display: none; }
+    main { grid-template-columns: 1.1fr 1fr; padding: 32px 32px 48px; gap: 24px; align-items: start; }
+    .hero { grid-column: 1 / -1; }
+    .side { display: grid; gap: 24px; }
+    .topbar { padding-left: 32px; padding-right: 32px; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 </style>
 </head>
 <body>
-<main>
-  <header>
-    <h1>Double-styrning</h1>
-    <span class="who" id="who" hidden><span id="who-email"></span><button id="btn-logout">Logga ut</button></span>
+
+<!-- ============ Login ============ -->
+<section class="login" id="view-login" hidden>
+  <div class="login-inner">
+    <div class="stars"><svg aria-hidden="true" width="100%" height="100%" viewBox="0 0 1080 1080" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+    <rect id="Artboard1" x="0" y="0" width="1080" height="1080" style="fill:none;"/>
+    <g id="Artboard11" serif:id="Artboard1">
+        <g transform="matrix(7.08247,0,0,7.08247,-2239.65,-955.758)">
+            <g transform="matrix(0.724448,0,0,0.724448,270.056,166.029)">
+                <path d="M116.368,93.273L66.108,81.239L116.368,69.205L128.402,18.945L140.436,69.205L190.696,81.239L140.436,93.273L128.402,143.533L116.368,93.273Z" style="fill:rgb(232,255,0);"/>
+            </g>
+            <g transform="matrix(0.340495,0,0,0.340495,393.636,130.881)">
+                <path d="M116.368,93.273L66.108,81.239L116.368,69.205L128.402,18.945L140.436,69.205L190.696,81.239L140.436,93.273L128.402,143.533L116.368,93.273Z" style="fill:rgb(232,255,0);"/>
+            </g>
+            <g transform="matrix(1,0,0,1,326.345,147.596)">
+                <circle cx="132.222" cy="68.864" r="8.422" style="fill:rgb(232,255,0);"/>
+            </g>
+            <g transform="matrix(0.835557,0,0,0.835557,217.276,201.616)">
+                <circle cx="132.222" cy="68.864" r="8.422" style="fill:rgb(232,255,0);"/>
+            </g>
+            <g transform="matrix(0.630278,0,0,0.630278,321.756,141.658)">
+                <circle cx="132.222" cy="68.864" r="8.422" style="fill:rgb(232,255,0);"/>
+            </g>
+            <g transform="matrix(0.528654,0,0,0.528654,357.755,209.172)">
+                <path d="M116.368,93.273L66.108,81.239L116.368,69.205L128.402,18.945L140.436,69.205L190.696,81.239L140.436,93.273L128.402,143.533L116.368,93.273Z" style="fill:rgb(232,255,0);"/>
+            </g>
+        </g>
+    </g>
+</svg></div>
+    <div class="logo"><svg role="img" aria-label="Glanser" width="100%" height="100%" viewBox="0 0 1080 380" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+    <g transform="matrix(0.761179,0,0,0.761179,-47.8832,86.3859)">
+        <g transform="matrix(1,0,0,1,18.7077,0)">
+            <path d="M142.374,342.03C126.294,342.03 111.721,338.401 98.656,331.143C85.591,323.884 75.206,313.276 67.501,299.318C59.796,285.359 55.944,268.33 55.944,248.23L55.944,191.95C55.944,161.8 64.43,138.629 81.404,122.438C98.377,106.246 121.38,98.15 150.414,98.15C179.224,98.15 201.501,105.799 217.246,121.098C232.991,136.396 240.864,157.11 240.864,183.24L240.864,184.58L197.314,184.58L197.314,181.9C197.314,173.637 195.583,166.155 192.121,159.455C188.659,152.755 183.467,147.451 176.544,143.543C169.62,139.634 160.91,137.68 150.414,137.68C134.78,137.68 122.497,142.482 113.564,152.085C104.63,161.688 100.164,174.753 100.164,191.28L100.164,248.9C100.164,265.203 104.63,278.324 113.564,288.263C122.497,298.201 135.004,303.17 151.084,303.17C167.164,303.17 178.889,298.927 186.259,290.44C193.629,281.953 197.314,271.233 197.314,258.28L197.314,254.93L141.704,254.93L141.704,217.41L240.864,217.41L240.864,337.34L199.994,337.34L199.994,314.895L193.964,314.895C192.4,318.692 189.888,322.712 186.426,326.955C182.964,331.198 177.772,334.772 170.849,337.675C163.925,340.578 154.434,342.03 142.374,342.03Z" style="fill:white;fill-rule:nonzero;"/>
+        </g>
+        <path d="M283.074,337.34L283.074,102.84L327.294,102.84L327.294,297.14L434.494,297.14L423.999,336.356L283.074,337.34Z" style="fill:white;fill-rule:nonzero;"/>
+        <path d="M448.564,337.34L510.204,102.84L587.254,102.84L648.894,337.34L603.334,337.34L590.604,285.75L506.854,285.75L494.124,337.34L448.564,337.34ZM517.239,244.88L580.219,244.88L551.744,130.645L545.714,130.645L517.239,244.88Z" style="fill:white;fill-rule:nonzero;"/>
+        <g transform="matrix(1,0,0,1,-1.57841,0)">
+            <path d="M677.034,337.34L677.034,102.84L761.119,102.84L807.684,307.19L813.714,307.19L813.714,102.84L857.264,102.84L857.264,337.34L773.179,337.34L726.614,132.99L720.584,132.99L720.584,337.34L677.034,337.34Z" style="fill:white;fill-rule:nonzero;"/>
+        </g>
+        <path d="M982.889,342.03C964.799,342.03 948.83,338.792 934.984,332.315C921.137,325.838 910.305,316.57 902.489,304.51C894.672,292.45 890.764,277.933 890.764,260.96L890.764,251.58L934.314,251.58L934.314,260.96C934.314,275.03 938.669,285.583 947.379,292.618C956.089,299.653 967.925,303.17 982.889,303.17C998.075,303.17 1009.41,300.155 1016.89,294.125C1024.37,288.095 1028.11,280.39 1028.11,271.01C1028.11,264.533 1026.27,259.285 1022.59,255.265C1018.9,251.245 1013.54,247.951 1006.51,245.383C999.471,242.814 990.929,240.413 980.879,238.18L973.174,236.505C957.094,232.932 943.303,228.409 931.801,222.938C920.299,217.466 911.478,210.263 905.336,201.33C899.194,192.397 896.124,180.783 896.124,166.49C896.124,152.197 899.529,139.969 906.341,129.808C913.153,119.646 922.756,111.829 935.151,106.358C947.546,100.886 962.119,98.15 978.869,98.15C995.619,98.15 1010.53,100.998 1023.59,106.693C1036.66,112.388 1046.93,120.874 1054.41,132.153C1061.89,143.431 1065.63,157.557 1065.63,174.53L1065.63,184.58L1022.08,184.58L1022.08,174.53C1022.08,165.597 1020.35,158.394 1016.89,152.923C1013.43,147.451 1008.46,143.431 1001.98,140.863C995.507,138.294 987.802,137.01 978.869,137.01C965.469,137.01 955.586,139.523 949.221,144.548C942.856,149.573 939.674,156.44 939.674,165.15C939.674,170.957 941.181,175.87 944.196,179.89C947.211,183.91 951.734,187.26 957.764,189.94C963.794,192.62 971.499,194.965 980.879,196.975L988.584,198.65C1005.33,202.223 1019.91,206.802 1032.3,212.385C1044.7,217.968 1054.36,225.338 1061.28,234.495C1068.2,243.652 1071.66,255.377 1071.66,269.67C1071.66,283.963 1068.03,296.526 1060.78,307.358C1053.52,318.189 1043.24,326.676 1029.96,332.818C1016.67,338.959 1000.98,342.03 982.889,342.03Z" style="fill:white;fill-rule:nonzero;"/>
+        <path d="M1104.49,337.34L1104.49,102.84L1255.24,102.84L1255.24,143.04L1148.71,143.04L1148.71,198.985L1245.86,198.985L1245.86,239.185L1148.71,239.185L1148.71,297.14L1257.25,297.14L1257.25,337.34L1104.49,337.34Z" style="fill:white;fill-rule:nonzero;"/>
+        <path d="M1290.08,337.34L1290.08,102.84L1391.92,102.84C1406.66,102.84 1419.51,105.408 1430.45,110.545C1441.39,115.682 1449.88,122.94 1455.91,132.32C1461.94,141.7 1464.95,152.755 1464.95,165.485L1464.95,169.505C1464.95,183.575 1461.6,194.965 1454.9,203.675C1448.2,212.385 1439.94,218.75 1430.11,222.77L1430.11,228.8C1439.05,229.247 1445.97,232.318 1450.88,238.013C1455.8,243.708 1458.25,251.245 1458.25,260.625L1458.25,337.34L1414.03,337.34L1414.03,266.99C1414.03,261.63 1412.64,257.275 1409.85,253.925C1407.05,250.575 1402.42,248.9 1395.94,248.9L1334.3,248.9L1334.3,337.34L1290.08,337.34ZM1334.3,208.7L1387.23,208.7C1397.73,208.7 1405.94,205.853 1411.86,200.158C1417.77,194.463 1420.73,186.925 1420.73,177.545L1420.73,174.195C1420.73,164.815 1417.83,157.278 1412.02,151.583C1406.22,145.888 1397.95,143.04 1387.23,143.04L1334.3,143.04L1334.3,208.7Z" style="fill:white;fill-rule:nonzero;"/>
+    </g>
+    <g transform="matrix(0.907013,0,0,0.907013,14.6083,-120.458)">
+        <g transform="matrix(-0.724448,0,0,0.724448,513.361,178.225)">
+            <path d="M116.368,93.273L66.108,81.239L116.368,69.205L128.402,18.945L140.436,69.205L190.696,81.239L140.436,93.273L128.402,143.533L116.368,93.273Z" style="fill:rgb(232,255,0);"/>
+        </g>
+        <g transform="matrix(0.340495,0,0,0.340495,331.491,164.289)">
+            <path d="M116.368,93.273L66.108,81.239L116.368,69.205L128.402,18.945L140.436,69.205L190.696,81.239L140.436,93.273L128.402,143.533L116.368,93.273Z" style="fill:rgb(232,255,0);"/>
+        </g>
+        <g transform="matrix(1,0,0,1,318.309,210.617)">
+            <circle cx="132.222" cy="68.864" r="8.422" style="fill:rgb(232,255,0);"/>
+        </g>
+        <g transform="matrix(0.835557,0,0,0.835557,214.891,186.576)">
+            <circle cx="132.222" cy="68.864" r="8.422" style="fill:rgb(232,255,0);"/>
+        </g>
+        <g transform="matrix(0.630278,0,0,0.630278,353.465,134.193)">
+            <circle cx="132.222" cy="68.864" r="8.422" style="fill:rgb(232,255,0);"/>
+        </g>
+        <g transform="matrix(0.528654,0,0,0.528654,283.385,227.064)">
+            <path d="M116.368,93.273L66.108,81.239L116.368,69.205L128.402,18.945L140.436,69.205L190.696,81.239L140.436,93.273L128.402,143.533L116.368,93.273Z" style="fill:rgb(232,255,0);"/>
+        </g>
+    </g>
+</svg></div>
+    <h1>Kör kontorsroboten.</h1>
+    <p>Logga in med ditt Google-konto på glanser.com för att se om roboten är ledig, skicka in den i ett möte och köra den.</p>
+    <button class="btn primary block" id="btn-login">Logga in med Google</button>
+    <div class="mono muted">Endast glanser.com</div>
+    <p class="error" id="login-error" role="alert"></p>
+  </div>
+</section>
+
+<!-- ============ App ============ -->
+<div id="view-app" hidden>
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo"><svg role="img" aria-label="Glanser" width="100%" height="100%" viewBox="0 0 1080 380" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+    <g transform="matrix(0.761179,0,0,0.761179,-47.8832,86.3859)">
+        <g transform="matrix(1,0,0,1,18.7077,0)">
+            <path d="M142.374,342.03C126.294,342.03 111.721,338.401 98.656,331.143C85.591,323.884 75.206,313.276 67.501,299.318C59.796,285.359 55.944,268.33 55.944,248.23L55.944,191.95C55.944,161.8 64.43,138.629 81.404,122.438C98.377,106.246 121.38,98.15 150.414,98.15C179.224,98.15 201.501,105.799 217.246,121.098C232.991,136.396 240.864,157.11 240.864,183.24L240.864,184.58L197.314,184.58L197.314,181.9C197.314,173.637 195.583,166.155 192.121,159.455C188.659,152.755 183.467,147.451 176.544,143.543C169.62,139.634 160.91,137.68 150.414,137.68C134.78,137.68 122.497,142.482 113.564,152.085C104.63,161.688 100.164,174.753 100.164,191.28L100.164,248.9C100.164,265.203 104.63,278.324 113.564,288.263C122.497,298.201 135.004,303.17 151.084,303.17C167.164,303.17 178.889,298.927 186.259,290.44C193.629,281.953 197.314,271.233 197.314,258.28L197.314,254.93L141.704,254.93L141.704,217.41L240.864,217.41L240.864,337.34L199.994,337.34L199.994,314.895L193.964,314.895C192.4,318.692 189.888,322.712 186.426,326.955C182.964,331.198 177.772,334.772 170.849,337.675C163.925,340.578 154.434,342.03 142.374,342.03Z" style="fill:white;fill-rule:nonzero;"/>
+        </g>
+        <path d="M283.074,337.34L283.074,102.84L327.294,102.84L327.294,297.14L434.494,297.14L423.999,336.356L283.074,337.34Z" style="fill:white;fill-rule:nonzero;"/>
+        <path d="M448.564,337.34L510.204,102.84L587.254,102.84L648.894,337.34L603.334,337.34L590.604,285.75L506.854,285.75L494.124,337.34L448.564,337.34ZM517.239,244.88L580.219,244.88L551.744,130.645L545.714,130.645L517.239,244.88Z" style="fill:white;fill-rule:nonzero;"/>
+        <g transform="matrix(1,0,0,1,-1.57841,0)">
+            <path d="M677.034,337.34L677.034,102.84L761.119,102.84L807.684,307.19L813.714,307.19L813.714,102.84L857.264,102.84L857.264,337.34L773.179,337.34L726.614,132.99L720.584,132.99L720.584,337.34L677.034,337.34Z" style="fill:white;fill-rule:nonzero;"/>
+        </g>
+        <path d="M982.889,342.03C964.799,342.03 948.83,338.792 934.984,332.315C921.137,325.838 910.305,316.57 902.489,304.51C894.672,292.45 890.764,277.933 890.764,260.96L890.764,251.58L934.314,251.58L934.314,260.96C934.314,275.03 938.669,285.583 947.379,292.618C956.089,299.653 967.925,303.17 982.889,303.17C998.075,303.17 1009.41,300.155 1016.89,294.125C1024.37,288.095 1028.11,280.39 1028.11,271.01C1028.11,264.533 1026.27,259.285 1022.59,255.265C1018.9,251.245 1013.54,247.951 1006.51,245.383C999.471,242.814 990.929,240.413 980.879,238.18L973.174,236.505C957.094,232.932 943.303,228.409 931.801,222.938C920.299,217.466 911.478,210.263 905.336,201.33C899.194,192.397 896.124,180.783 896.124,166.49C896.124,152.197 899.529,139.969 906.341,129.808C913.153,119.646 922.756,111.829 935.151,106.358C947.546,100.886 962.119,98.15 978.869,98.15C995.619,98.15 1010.53,100.998 1023.59,106.693C1036.66,112.388 1046.93,120.874 1054.41,132.153C1061.89,143.431 1065.63,157.557 1065.63,174.53L1065.63,184.58L1022.08,184.58L1022.08,174.53C1022.08,165.597 1020.35,158.394 1016.89,152.923C1013.43,147.451 1008.46,143.431 1001.98,140.863C995.507,138.294 987.802,137.01 978.869,137.01C965.469,137.01 955.586,139.523 949.221,144.548C942.856,149.573 939.674,156.44 939.674,165.15C939.674,170.957 941.181,175.87 944.196,179.89C947.211,183.91 951.734,187.26 957.764,189.94C963.794,192.62 971.499,194.965 980.879,196.975L988.584,198.65C1005.33,202.223 1019.91,206.802 1032.3,212.385C1044.7,217.968 1054.36,225.338 1061.28,234.495C1068.2,243.652 1071.66,255.377 1071.66,269.67C1071.66,283.963 1068.03,296.526 1060.78,307.358C1053.52,318.189 1043.24,326.676 1029.96,332.818C1016.67,338.959 1000.98,342.03 982.889,342.03Z" style="fill:white;fill-rule:nonzero;"/>
+        <path d="M1104.49,337.34L1104.49,102.84L1255.24,102.84L1255.24,143.04L1148.71,143.04L1148.71,198.985L1245.86,198.985L1245.86,239.185L1148.71,239.185L1148.71,297.14L1257.25,297.14L1257.25,337.34L1104.49,337.34Z" style="fill:white;fill-rule:nonzero;"/>
+        <path d="M1290.08,337.34L1290.08,102.84L1391.92,102.84C1406.66,102.84 1419.51,105.408 1430.45,110.545C1441.39,115.682 1449.88,122.94 1455.91,132.32C1461.94,141.7 1464.95,152.755 1464.95,165.485L1464.95,169.505C1464.95,183.575 1461.6,194.965 1454.9,203.675C1448.2,212.385 1439.94,218.75 1430.11,222.77L1430.11,228.8C1439.05,229.247 1445.97,232.318 1450.88,238.013C1455.8,243.708 1458.25,251.245 1458.25,260.625L1458.25,337.34L1414.03,337.34L1414.03,266.99C1414.03,261.63 1412.64,257.275 1409.85,253.925C1407.05,250.575 1402.42,248.9 1395.94,248.9L1334.3,248.9L1334.3,337.34L1290.08,337.34ZM1334.3,208.7L1387.23,208.7C1397.73,208.7 1405.94,205.853 1411.86,200.158C1417.77,194.463 1420.73,186.925 1420.73,177.545L1420.73,174.195C1420.73,164.815 1417.83,157.278 1412.02,151.583C1406.22,145.888 1397.95,143.04 1387.23,143.04L1334.3,143.04L1334.3,208.7Z" style="fill:white;fill-rule:nonzero;"/>
+    </g>
+    <g transform="matrix(0.907013,0,0,0.907013,14.6083,-120.458)">
+        <g transform="matrix(-0.724448,0,0,0.724448,513.361,178.225)">
+            <path d="M116.368,93.273L66.108,81.239L116.368,69.205L128.402,18.945L140.436,69.205L190.696,81.239L140.436,93.273L128.402,143.533L116.368,93.273Z" style="fill:rgb(232,255,0);"/>
+        </g>
+        <g transform="matrix(0.340495,0,0,0.340495,331.491,164.289)">
+            <path d="M116.368,93.273L66.108,81.239L116.368,69.205L128.402,18.945L140.436,69.205L190.696,81.239L140.436,93.273L128.402,143.533L116.368,93.273Z" style="fill:rgb(232,255,0);"/>
+        </g>
+        <g transform="matrix(1,0,0,1,318.309,210.617)">
+            <circle cx="132.222" cy="68.864" r="8.422" style="fill:rgb(232,255,0);"/>
+        </g>
+        <g transform="matrix(0.835557,0,0,0.835557,214.891,186.576)">
+            <circle cx="132.222" cy="68.864" r="8.422" style="fill:rgb(232,255,0);"/>
+        </g>
+        <g transform="matrix(0.630278,0,0,0.630278,353.465,134.193)">
+            <circle cx="132.222" cy="68.864" r="8.422" style="fill:rgb(232,255,0);"/>
+        </g>
+        <g transform="matrix(0.528654,0,0,0.528654,283.385,227.064)">
+            <path d="M116.368,93.273L66.108,81.239L116.368,69.205L128.402,18.945L140.436,69.205L190.696,81.239L140.436,93.273L128.402,143.533L116.368,93.273Z" style="fill:rgb(232,255,0);"/>
+        </g>
+    </g>
+</svg></div>
+      <span class="tag mono">Double</span>
+    </div>
+    <div style="position: relative">
+      <button class="avatar" id="btn-avatar" aria-haspopup="true" aria-expanded="false" aria-label="Konto"></button>
+      <div class="menu" id="menu" hidden>
+        <div>
+          <div id="menu-name" style="font-weight: 600"></div>
+          <div id="menu-email" class="muted" style="font-size: 14px"></div>
+        </div>
+        <button class="btn block" id="btn-logout">Logga ut</button>
+      </div>
+    </div>
   </header>
 
-  <section class="panel login" id="view-login" hidden>
-    <p>Logga in med ditt Google-konto på glanser.com för att se och köra roboten.</p>
-    <button class="primary" id="btn-login">Logga in med Google</button>
-    <p class="hint" id="login-error"></p>
-  </section>
-
-  <div id="view-app" class="grid" hidden>
-    <section class="panel">
-      <dl class="facts">
-        <dt>Robot</dt><dd><span class="dot" id="dot-robot"></span><span id="txt-robot">Väntar på status…</span></dd>
-        <dt>Används</dt><dd id="txt-driver">–</dd>
-        <dt>Möte</dt><dd id="txt-meeting">–</dd>
-        <dt>Senast använd</dt><dd id="txt-last">–</dd>
-        <dt>Här nu</dt><dd id="txt-online">–</dd>
-        <dt>Anslutning</dt><dd><span class="dot" id="dot-link"></span><span id="txt-link">Ansluter…</span></dd>
-      </dl>
+  <main>
+    <section class="card hero" aria-live="polite">
+      <div class="hero-top">
+        <span class="mono muted">Roboten</span>
+        <span class="mono muted" id="txt-link">Ansluter…</span>
+      </div>
+      <h2><span class="dot" id="dot-robot"></span><span id="txt-robot">Väntar…</span></h2>
+      <div class="chips" id="chips"></div>
     </section>
 
-    <div class="banner" id="seat-banner" hidden></div>
-
-    <section class="panel grid">
-      <div class="pad">
-        <span></span><button data-key="up" aria-label="Framåt">▲</button><span></span>
-        <button data-key="left" aria-label="Vänster">◀</button>
-        <button data-key="stop" aria-label="Stopp">■</button>
-        <button data-key="right" aria-label="Höger">▶</button>
-        <span></span><button data-key="down" aria-label="Bakåt">▼</button><span></span>
+    <section class="card" data-panel="drive" id="panel-drive">
+      <div class="banner" id="seat-banner" hidden></div>
+      <div class="joy-wrap">
+        <div class="joy" id="joy" role="application" aria-label="Joystick. Dra för att köra.">
+          <span class="arrow n">FRAM</span><span class="arrow s">BACK</span><span class="arrow w">V</span><span class="arrow e">H</span>
+          <div class="knob" id="knob"></div>
+        </div>
+        <span class="mono muted">Dra för att köra</span>
       </div>
+      <button class="btn danger block stop" id="btn-stop">Stopp</button>
       <div>
-        <label for="speed">Fart: <span id="speed-val"></span></label>
-        <input type="range" id="speed" min="20" max="100" step="5" value="60">
+        <div class="mono muted" style="margin-bottom: 8px">Fart</div>
+        <div class="segmented" id="speed" role="group" aria-label="Fart">
+          <button data-speed="0.35" aria-pressed="false">Lugn</button>
+          <button data-speed="0.6" aria-pressed="true">Normal</button>
+          <button data-speed="1" aria-pressed="false">Snabb</button>
+        </div>
       </div>
-      <div class="row">
-        <button data-key="poleUp">Höj ⬆</button>
-        <button data-key="poleDown">Sänk ⬇</button>
-        <button id="btn-park">Parkera</button>
-        <button id="btn-unpark">Fäll in stöd</button>
+      <div class="row2">
+        <button class="btn" data-hold="poleUp" aria-label="Höj">↑ Höj</button>
+        <button class="btn" data-hold="poleDown" aria-label="Sänk">↓ Sänk</button>
       </div>
-      <p class="hint">Tangentbord: <kbd>W A S D</kbd> eller piltangenter kör, <kbd>Shift</kbd> full fart, <kbd>R</kbd>/<kbd>F</kbd> höjer och sänker, <kbd>Mellanslag</kbd> stannar. En person kör åt gången. Platsen blir ledig 10 sekunder efter att föraren slutat köra. Vem som helst kan alltid stoppa.</p>
+      <button class="btn block" id="btn-kick">Parkera</button>
+      <p class="kbd-hint"><kbd>W A S D</kbd> eller piltangenter kör, <kbd>Shift</kbd> full fart, <kbd>R</kbd> <kbd>F</kbd> höjer och sänker, <kbd>Mellanslag</kbd> stannar.</p>
     </section>
 
-    <section class="panel grid">
-      <div>
-        <label for="meet-url">Meet-länk för roboten</label>
-        <input type="text" id="meet-url" placeholder="https://meet.google.com/abc-defg-hij" autocomplete="off">
-      </div>
-      <div class="row">
-        <button class="primary" id="btn-meet">Öppna på roboten</button>
-        <button id="btn-join">Tryck "Gå med"</button>
-        <button id="btn-reload">Ladda om</button>
-      </div>
-    </section>
-  </div>
-</main>
+    <div class="side">
+      <section class="card" data-panel="meet" id="panel-meet">
+        <div class="mono muted">Möte</div>
+        <div class="current" id="txt-meeting">–</div>
+        <label class="field">
+          <span class="mono muted">Meet-länk</span>
+          <input type="url" id="meet-url" inputmode="url" placeholder="meet.google.com/abc-defg-hij" autocomplete="off" autocapitalize="off" spellcheck="false">
+        </label>
+        <button class="btn primary block" id="btn-meet">Skicka in roboten</button>
+        <div class="row2">
+          <button class="btn" id="btn-join">Gå med</button>
+          <button class="btn" id="btn-reload">Ladda om</button>
+        </div>
+        <button class="btn danger block" id="btn-leave">Lämna mötet</button>
+      </section>
+
+      <section class="card" data-panel="status" id="panel-status">
+        <div class="mono muted">Status</div>
+        <dl class="facts">
+          <dt>Används</dt><dd id="f-driver">–</dd>
+          <dt>Batteri</dt><dd id="f-battery">–</dd>
+          <dt>Stöd</dt><dd id="f-kick">–</dd>
+          <dt>Höjd</dt><dd id="f-pole">–</dd>
+          <dt>Senast använd</dt><dd id="f-last">–</dd>
+          <dt>Här nu</dt><dd><div class="people" id="f-online">–</div></dd>
+          <dt>Firmware</dt><dd id="f-fw" class="mono">–</dd>
+        </dl>
+      </section>
+    </div>
+  </main>
+
+  <nav class="tabbar" role="tablist" aria-label="Vyer">
+    <button role="tab" data-tab="drive" aria-selected="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.2" fill="currentColor"/></svg>
+      <span class="mono">Kör</span><span class="tab-ind"></span>
+    </button>
+    <button role="tab" data-tab="meet" aria-selected="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10.5 21 7v10l-5-3.5"/></svg>
+      <span class="mono">Möte</span><span class="tab-ind"></span>
+    </button>
+    <button role="tab" data-tab="status" aria-selected="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12h4l3-7 4 14 3-7h4"/></svg>
+      <span class="mono">Status</span><span class="tab-ind"></span>
+    </button>
+  </nav>
+</div>
+
+<div class="toast" id="toast" role="status"></div>
 
 <script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
@@ -120,6 +366,7 @@
   var CFG = window.DOUBLE_CONFIG || {};
   var SEND_HZ = 10;
   var TURN_SCALE = 0.7;
+  var DEADZONE = 0.12;
   var STATUS_STALE_MS = 4000;
   var DRIVER_TIMEOUT_MS = 10000;
 
@@ -128,42 +375,72 @@
     auth: { flowType: 'pkce', detectSessionInUrl: true, persistSession: true }
   });
 
-  var me = null;               // { email, name }
+  var me = null;
   var channel = null, joined = false;
   var lastStatus = null, lastStatusAt = 0;
   var online = [];
+  var otherDriver = null;
 
-  // ---- Auth ----
+  // ---------- Small helpers ----------
+  var toastTimer;
+  function toast(text) {
+    var el = $('toast');
+    el.textContent = text;
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { el.classList.remove('show'); }, 2600);
+  }
+  function shortName(email) {
+    if (!email) return '';
+    var n = email.split('@')[0].split(/[._-]/)[0];
+    return n.charAt(0).toUpperCase() + n.slice(1);
+  }
+  function initials(name) {
+    return name.split(/\s+/).filter(Boolean).slice(0, 2).map(function (p) { return p[0]; }).join('').toUpperCase();
+  }
+  function ago(ms) {
+    var s = Math.max(0, Math.round((Date.now() - ms) / 1000));
+    if (s < 60) return 'nyss';
+    var m = Math.round(s / 60);
+    if (m < 60) return m + ' min sedan';
+    var h = Math.round(m / 60);
+    if (h < 24) return h + ' h sedan';
+    return new Date(ms).toLocaleString('sv-SE', { dateStyle: 'short', timeStyle: 'short' });
+  }
+  function duration(ms) {
+    var m = Math.max(0, Math.round((Date.now() - ms) / 60000));
+    return m < 1 ? 'under en minut' : m + ' min';
+  }
+
+  // ---------- Auth ----------
   function allowed(email) {
     return typeof email === 'string' && email.toLowerCase().endsWith('@' + CFG.domain);
   }
-
   function showLogin(error) {
+    me = null;
     $('view-login').hidden = false;
     $('view-app').hidden = true;
-    $('who').hidden = true;
     $('login-error').textContent = error || '';
     disconnect();
   }
-
   function showApp(session) {
     var user = session.user;
-    me = {
-      email: user.email.toLowerCase(),
-      name: (user.user_metadata && (user.user_metadata.full_name || user.user_metadata.name)) || user.email
-    };
-    $('who-email').textContent = me.email;
-    $('who').hidden = false;
+    var meta = user.user_metadata || {};
+    me = { email: user.email.toLowerCase(), name: meta.full_name || meta.name || shortName(user.email) };
+    $('btn-avatar').textContent = initials(me.name);
+    $('menu-name').textContent = me.name;
+    $('menu-email').textContent = me.email;
     $('view-login').hidden = true;
     $('view-app').hidden = false;
     connect(session.access_token);
+    render();
   }
-
   function applySession(session) {
     if (!session) return showLogin();
     if (!allowed(session.user && session.user.email)) {
+      var email = session.user && session.user.email;
       client.auth.signOut();
-      return showLogin('Kontot ' + (session.user && session.user.email) + ' hör inte till ' + CFG.domain + '.');
+      return showLogin('Kontot ' + email + ' hör inte till ' + CFG.domain + '. Logga in med ditt Glanser-konto.');
     }
     if (!channel) showApp(session);
   }
@@ -171,11 +448,17 @@
   $('btn-login').addEventListener('click', function () {
     client.auth.signInWithOAuth({
       provider: 'google',
-      options: {
-        redirectTo: location.origin + location.pathname,
-        queryParams: { hd: CFG.domain, prompt: 'select_account' }
-      }
+      options: { redirectTo: location.origin + location.pathname, queryParams: { hd: CFG.domain, prompt: 'select_account' } }
     });
+  });
+  $('btn-avatar').addEventListener('click', function (e) {
+    e.stopPropagation();
+    var open = $('menu').hidden;
+    $('menu').hidden = !open;
+    $('btn-avatar').setAttribute('aria-expanded', String(open));
+  });
+  document.addEventListener('click', function (e) {
+    if (!$('menu').hidden && !$('menu').contains(e.target)) { $('menu').hidden = true; $('btn-avatar').setAttribute('aria-expanded', 'false'); }
   });
   $('btn-logout').addEventListener('click', function () {
     send('stop', {});
@@ -189,7 +472,7 @@
   });
   client.auth.getSession().then(function (res) { applySession(res.data.session); });
 
-  // ---- Realtime ----
+  // ---------- Realtime ----------
   function connect(token) {
     disconnect();
     client.realtime.setAuth(token);
@@ -203,10 +486,7 @@
     });
     channel.on('presence', { event: 'sync' }, function () {
       var state = channel.presenceState();
-      online = Object.keys(state).map(function (key) {
-        var meta = state[key][0] || {};
-        return meta.name || key;
-      });
+      online = Object.keys(state).map(function (key) { return (state[key][0] || {}).name || shortName(key); });
       render();
     });
     channel.subscribe(function (state, err) {
@@ -214,90 +494,151 @@
       if (joined) {
         channel.track({ name: me.name, since: Date.now() });
         send('ping', {});
-        setLink('ok', 'Ansluten');
+        $('txt-link').textContent = 'Live';
       } else if (state === 'CHANNEL_ERROR') {
-        setLink('bad', 'Nekad eller nere. Försöker igen…');
+        $('txt-link').textContent = 'Nekad eller nere';
         if (err) console.warn('[realtime]', err);
-      } else if (state === 'TIMED_OUT' || state === 'CLOSED') {
-        setLink('warn', 'Ansluter…');
+      } else {
+        $('txt-link').textContent = 'Ansluter…';
       }
     });
   }
-
   function disconnect() {
     if (channel) { client.removeChannel(channel); channel = null; }
     joined = false;
   }
-
   function send(event, payload) {
-    if (!channel || !joined) return;
+    if (!channel || !joined || !me) return false;
     payload.by = me.email;
     channel.send({ type: 'broadcast', event: event, payload: payload });
+    return true;
   }
 
-  // ---- Rendering ----
-  function setDot(id, cls) { $(id).className = 'dot ' + (cls || ''); }
-  function setLink(cls, text) { setDot('dot-link', cls); $('txt-link').textContent = text; }
-
-  function ago(ms) {
-    var s = Math.max(0, Math.round((Date.now() - ms) / 1000));
-    if (s < 60) return 'nyss';
-    var m = Math.round(s / 60);
-    if (m < 60) return m + ' min sedan';
-    var h = Math.round(m / 60);
-    if (h < 24) return h + ' h sedan';
-    return new Date(ms).toLocaleString('sv-SE', { dateStyle: 'short', timeStyle: 'short' });
+  // ---------- Tabs (mobile) ----------
+  function selectTab(name) {
+    document.querySelectorAll('[data-tab]').forEach(function (b) { b.setAttribute('aria-selected', String(b.dataset.tab === name)); });
+    document.querySelectorAll('[data-panel]').forEach(function (p) { p.classList.toggle('current-panel', p.dataset.panel === name); });
+    try { sessionStorage.setItem('double-tab', name); } catch (e) {}
+    window.scrollTo({ top: 0 });
   }
-  function shortName(email) { return email ? email.split('@')[0] : ''; }
+  document.querySelectorAll('[data-tab]').forEach(function (b) {
+    b.addEventListener('click', function () { selectTab(b.dataset.tab); });
+  });
+  var savedTab = 'drive';
+  try { savedTab = sessionStorage.getItem('double-tab') || 'drive'; } catch (e) {}
+  selectTab(savedTab);
 
-  var otherDriver = null;
+  // ---------- Rendering ----------
+  function chip(text, cls) {
+    var el = document.createElement('span');
+    el.className = 'chip' + (cls ? ' ' + cls : '');
+    el.textContent = text;
+    return el;
+  }
 
   function render() {
     if (!me) return;
     var fresh = lastStatus && Date.now() - lastStatusAt < STATUS_STALE_MS;
     var s = fresh ? lastStatus : {};
+    var battery = Number(s.battery || 0); if (battery <= 1) battery *= 100; battery = Math.round(battery);
+    var pole = Number(s.pole || 0); if (pole <= 1) pole *= 100; pole = Math.round(pole);
+    var kick = { 1: 'Parkerad', 2: 'Redo att köra', 3: 'Parkerar…', 4: 'Fäller in stöd…' }[s.kickstand] || '–';
 
-    if (!fresh) {
-      setDot('dot-robot', 'bad');
-      $('txt-robot').textContent = lastStatusAt ? 'Offline (senast sedd ' + ago(lastStatusAt) + ')' : 'Offline';
-    } else if (!s.robot) {
-      setDot('dot-robot', 'warn');
-      $('txt-robot').textContent = 'iPaden är online, basen är inte ansluten';
-    } else {
-      var b = Number(s.battery || 0); if (b <= 1) b *= 100;
-      var kick = { 1: 'parkerad', 2: 'redo att köra', 3: 'parkerar', 4: 'fäller in stöd' }[s.kickstand] || '';
-      setDot('dot-robot', 'ok');
-      $('txt-robot').textContent = 'Online · batteri ' + Math.round(b) + '%' + (s.charging ? ' (laddar)' : '') + (kick ? ' · ' + kick : '');
-    }
+    var dot = $('dot-robot');
+    if (!fresh) { dot.className = 'dot bad'; $('txt-robot').textContent = 'Offline'; }
+    else if (!s.robot) { dot.className = 'dot warn'; $('txt-robot').textContent = 'Basen saknas'; }
+    else { dot.className = 'dot ok'; $('txt-robot').textContent = s.driver ? 'Används' : (s.meeting ? 'I möte' : 'Ledig'); }
 
     var driver = fresh ? s.driver : null;
-    $('txt-driver').textContent = driver
-      ? (driver === me.email ? 'Du kör' : shortName(driver) + ' kör') + ' (sedan ' + ago(s.driverSince).replace(' sedan', '') + ')'
-      : (fresh ? 'Ledig' : '–');
-    $('txt-meeting').textContent = fresh ? (s.meeting ? 'I möte ' + s.meeting : 'Inte i något möte') : '–';
-    $('txt-last').textContent = s.lastUser ? shortName(s.lastUser) + ', ' + ago(s.lastUsedAt) : (fresh ? 'Aldrig' : '–');
-    $('txt-online').textContent = online.length ? online.join(', ') : '–';
+    otherDriver = driver && driver !== me.email ? driver : null;
 
-    otherDriver = driver && driver !== me.email && Date.now() - lastStatusAt < DRIVER_TIMEOUT_MS ? driver : null;
+    var chips = $('chips');
+    chips.textContent = '';
+    if (!fresh) {
+      chips.appendChild(chip(lastStatusAt ? 'Senast sedd ' + ago(lastStatusAt) : 'Ingen kontakt', 'risk'));
+    } else {
+      if (s.robot) chips.appendChild(chip(battery + '%' + (s.charging ? ' · laddar' : ''), battery < 20 && !s.charging ? 'risk' : ''));
+      if (s.robot) chips.appendChild(chip(kick));
+      if (s.meeting) chips.appendChild(chip('Möte ' + s.meeting, 'accent'));
+      if (driver) chips.appendChild(chip(driver === me.email ? 'Du kör' : shortName(driver) + ' kör'));
+    }
+
+    $('f-driver').textContent = driver ? (driver === me.email ? 'Du' : shortName(driver)) + ', sedan ' + duration(s.driverSince) : (fresh ? 'Ledig' : '–');
+    $('f-battery').textContent = fresh && s.robot ? battery + '%' + (s.charging ? ', laddar' : '') : '–';
+    $('f-kick').textContent = fresh && s.robot ? kick : '–';
+    $('f-pole').textContent = fresh && s.robot ? pole + '%' : '–';
+    $('f-last').textContent = s.lastUser ? shortName(s.lastUser) + ', ' + ago(s.lastUsedAt) : (fresh ? 'Aldrig' : '–');
+    $('f-fw').textContent = s.firmware || '–';
+    var people = $('f-online');
+    people.textContent = '';
+    if (online.length) online.forEach(function (n) { people.appendChild(chip(n)); });
+    else people.textContent = '–';
+
+    $('txt-meeting').textContent = !fresh ? '–' : (s.meeting ? 'I möte ' + s.meeting : (s.screen === 'signin' ? 'Inloggning pågår på iPaden' : 'Inte i något möte'));
+    $('btn-leave').disabled = !fresh || !s.meeting;
+    $('btn-join').disabled = !fresh || !s.meeting;
+
     var banner = $('seat-banner');
     if (otherDriver) {
-      banner.hidden = false;
-      banner.className = 'banner';
-      banner.textContent = shortName(otherDriver) + ' kör just nu. Du kan ta över när platsen är ledig.';
+      banner.hidden = false; banner.className = 'banner';
+      banner.textContent = shortName(otherDriver) + ' kör just nu. Platsen blir ledig 10 sekunder efter att hen slutat.';
     } else if (!fresh) {
-      banner.hidden = false;
-      banner.className = 'banner bad';
-      banner.textContent = 'Roboten svarar inte. Kontrollera att appen är öppen på iPaden.';
+      banner.hidden = false; banner.className = 'banner bad';
+      banner.textContent = 'Roboten svarar inte. Kontrollera att appen är öppen på iPaden och att den har nät.';
+    } else if (!s.robot) {
+      banner.hidden = false; banner.className = 'banner';
+      banner.textContent = 'iPaden är online men sitter inte i basen.';
     } else {
       banner.hidden = true;
     }
-    document.querySelectorAll('[data-key]:not([data-key=stop]), #btn-park, #btn-unpark').forEach(function (el) {
-      el.disabled = !!otherDriver || !fresh;
-    });
+
+    var canDrive = fresh && s.robot && !otherDriver;
+    $('joy').classList.toggle('disabled', !canDrive);
+    document.querySelectorAll('[data-hold]').forEach(function (b) { b.disabled = !canDrive; });
+    var kickBtn = $('btn-kick');
+    kickBtn.disabled = !canDrive;
+    kickBtn.textContent = s.kickstand === 1 ? 'Fäll in stöden' : 'Parkera';
+    kickBtn.dataset.action = s.kickstand === 1 ? 'unpark' : 'park';
+    $('btn-meet').disabled = !fresh;
   }
   setInterval(render, 1000);
 
-  // ---- Input ----
+  // ---------- Joystick ----------
+  var joy = { x: 0, y: 0, active: false };
+  var joyEl = $('joy'), knob = $('knob');
+  function moveKnob(x, y) {
+    var r = joyEl.clientWidth / 2 - knob.clientWidth / 2;
+    knob.style.transform = 'translate(calc(-50% + ' + (x * r) + 'px), calc(-50% + ' + (y * r) + 'px))';
+  }
+  function joyFromEvent(e) {
+    var rect = joyEl.getBoundingClientRect();
+    var r = rect.width / 2 - knob.clientWidth / 2;
+    var dx = e.clientX - (rect.left + rect.width / 2);
+    var dy = e.clientY - (rect.top + rect.height / 2);
+    var len = Math.sqrt(dx * dx + dy * dy);
+    if (len > r) { dx = dx / len * r; dy = dy / len * r; }
+    joy.x = dx / r; joy.y = dy / r;
+    knob.style.transition = 'background 200ms var(--ease)';
+    moveKnob(joy.x, joy.y);
+  }
+  joyEl.addEventListener('pointerdown', function (e) {
+    if (joyEl.classList.contains('disabled')) return;
+    e.preventDefault();
+    joyEl.setPointerCapture(e.pointerId);
+    joy.active = true; joyEl.classList.add('active');
+    if (navigator.vibrate) navigator.vibrate(10);
+    joyFromEvent(e);
+  });
+  joyEl.addEventListener('pointermove', function (e) { if (joy.active) joyFromEvent(e); });
+  function releaseJoy() {
+    joy.active = false; joy.x = 0; joy.y = 0;
+    joyEl.classList.remove('active');
+    knob.style.transition = '';
+    moveKnob(0, 0);
+  }
+  ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(function (ev) { joyEl.addEventListener(ev, releaseJoy); });
+
+  // ---------- Keyboard and hold buttons ----------
   var held = {};
   var keyMap = {
     ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down',
@@ -305,7 +646,6 @@
     KeyR: 'poleUp', KeyF: 'poleDown'
   };
   var boost = false;
-
   function typing(e) { var t = e.target; return t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA'); }
 
   document.addEventListener('keydown', function (e) {
@@ -320,15 +660,14 @@
     var k = keyMap[e.code];
     if (k) { delete held[k]; highlight(); }
   });
-  window.addEventListener('blur', function () { held = {}; boost = false; highlight(); });
+  window.addEventListener('blur', function () { held = {}; boost = false; highlight(); releaseJoy(); });
   document.addEventListener('visibilitychange', function () { if (document.hidden) stopAll(); });
 
-  document.querySelectorAll('[data-key]').forEach(function (btn) {
-    var k = btn.getAttribute('data-key');
+  document.querySelectorAll('[data-hold]').forEach(function (btn) {
+    var k = btn.dataset.hold;
     btn.addEventListener('pointerdown', function (e) {
-      e.preventDefault();
-      if (k === 'stop') { stopAll(); return; }
       if (btn.disabled) return;
+      e.preventDefault();
       btn.setPointerCapture(e.pointerId);
       held[k] = true; highlight();
     });
@@ -337,48 +676,65 @@
     });
     btn.addEventListener('contextmenu', function (e) { e.preventDefault(); });
   });
-
   function highlight() {
-    document.querySelectorAll('[data-key]').forEach(function (btn) {
-      btn.classList.toggle('active', !!held[btn.getAttribute('data-key')]);
-    });
+    document.querySelectorAll('[data-hold]').forEach(function (b) { b.classList.toggle('held', !!held[b.dataset.hold]); });
   }
-
   function stopAll() {
-    held = {}; highlight();
-    send('stop', {});
+    held = {}; highlight(); releaseJoy();
+    if (send('stop', {})) toast('Stopp skickat');
   }
+  $('btn-stop').addEventListener('click', stopAll);
 
-  var speedInput = $('speed');
-  function renderSpeed() { $('speed-val').textContent = speedInput.value + '%'; }
-  speedInput.addEventListener('input', renderSpeed);
-  renderSpeed();
+  var speed = 0.6;
+  document.querySelectorAll('[data-speed]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      speed = Number(b.dataset.speed);
+      document.querySelectorAll('[data-speed]').forEach(function (o) { o.setAttribute('aria-pressed', String(o === b)); });
+    });
+  });
 
-  // Send at a fixed rate while anything is held; the robot stops itself 0.5 s after the last message.
+  // Fixed send rate while anything is held; the robot stops itself 0.5 s after the last message.
   var wasMoving = false;
+  function shape(v) { return Math.abs(v) < DEADZONE ? 0 : v; }
   setInterval(function () {
-    if (otherDriver) { wasMoving = false; return; }
-    var speed = boost ? 1 : speedInput.value / 100;
-    var d = (held.up ? 1 : 0) - (held.down ? 1 : 0);
-    var t = (held.right ? 1 : 0) - (held.left ? 1 : 0);
+    if (otherDriver || !me) { wasMoving = false; return; }
+    var d, t;
+    if (joy.active) {
+      d = shape(-joy.y) * speed;
+      t = shape(joy.x) * speed * TURN_SCALE;
+    } else {
+      var s = boost ? 1 : speed;
+      d = ((held.up ? 1 : 0) - (held.down ? 1 : 0)) * s;
+      t = ((held.right ? 1 : 0) - (held.left ? 1 : 0)) * s * TURN_SCALE;
+    }
     var p = (held.poleUp ? 1 : 0) - (held.poleDown ? 1 : 0);
     var moving = d !== 0 || t !== 0 || p !== 0;
-    if (moving || wasMoving) {
-      send('drive', { d: d * speed, t: t * speed * TURN_SCALE, p: p });
-    }
+    if (moving || wasMoving) send('drive', { d: d, t: t, p: p });
     wasMoving = moving;
   }, 1000 / SEND_HZ);
 
-  // ---- Buttons ----
-  $('btn-park').addEventListener('click', function () { send('park', {}); });
-  $('btn-unpark').addEventListener('click', function () { send('unpark', {}); });
+  // ---------- Meeting and parking ----------
+  function normalizeMeetUrl(v) {
+    v = v.trim();
+    if (/^[a-z]{3}-[a-z]{4}-[a-z]{3}$/i.test(v)) v = 'https://meet.google.com/' + v;
+    if (/^meet\.google\.com\//i.test(v)) v = 'https://' + v;
+    return /^https:\/\/meet\.google\.com\/[a-z0-9-]+/i.test(v) ? v : null;
+  }
   $('btn-meet').addEventListener('click', function () {
-    var url = $('meet-url').value.trim();
-    if (!/^https:\/\/meet\.google\.com\/./.test(url)) { alert('Klistra in en meet.google.com-länk.'); return; }
-    send('meet', { url: url });
+    var url = normalizeMeetUrl($('meet-url').value);
+    if (!url) { toast('Klistra in en Meet-länk eller mötes-kod'); $('meet-url').focus(); return; }
+    if (send('meet', { url: url })) { toast('Roboten går in i mötet'); $('meet-url').value = ''; }
   });
-  $('btn-join').addEventListener('click', function () { send('join', {}); });
-  $('btn-reload').addEventListener('click', function () { send('reload', {}); });
+  $('meet-url').addEventListener('keydown', function (e) { if (e.key === 'Enter') $('btn-meet').click(); });
+  $('btn-join').addEventListener('click', function () { if (send('join', {})) toast('Försöker trycka "Gå med"'); });
+  $('btn-reload').addEventListener('click', function () { if (send('reload', {})) toast('Laddar om'); });
+  $('btn-leave').addEventListener('click', function () {
+    if (confirm('Lämna mötet? Roboten går tillbaka till viloskärmen.') && send('leave', {})) toast('Roboten lämnar mötet');
+  });
+  $('btn-kick').addEventListener('click', function () {
+    var action = $('btn-kick').dataset.action || 'park';
+    if (send(action, {})) toast(action === 'park' ? 'Parkerar' : 'Fäller in stöden');
+  });
 })();
 </script>
 </body>

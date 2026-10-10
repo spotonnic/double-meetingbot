@@ -9,6 +9,7 @@ struct Settings {
     var robotPassword: String
     var meetURL: String
     var guestName: String
+    var controllerURL: String
 
     private static let defaults = UserDefaults.standard
     private static let prefix = "settings."
@@ -25,7 +26,8 @@ struct Settings {
             robotEmail: value("RobotEmail", ""),
             robotPassword: value("RobotPassword", ""),
             meetURL: value("MeetURL", "https://meet.google.com/"),
-            guestName: value("GuestName", "Double")
+            guestName: value("GuestName", "Double"),
+            controllerURL: value("ControllerURL", "double-meetingbot-glanser.vercel.app")
         )
     }
 
@@ -38,12 +40,19 @@ struct Settings {
         d.set(robotPassword, forKey: Settings.prefix + "RobotPassword")
         d.set(meetURL, forKey: Settings.prefix + "MeetURL")
         d.set(guestName, forKey: Settings.prefix + "GuestName")
+        d.set(controllerURL, forKey: Settings.prefix + "ControllerURL")
     }
 
     var isRealtimeConfigured: Bool {
         !supabaseURL.isEmpty && !supabaseKey.isEmpty && !room.isEmpty
             && !robotEmail.isEmpty && !robotPassword.isEmpty
             && !supabaseURL.contains("YOUR-PROJECT")
+    }
+
+    /// True when meetURL points at a specific meeting rather than the Meet start page.
+    var isInMeeting: Bool {
+        guard let url = URL(string: meetURL), url.host == "meet.google.com" else { return false }
+        return url.path.count > 1
     }
 
     private static func bundledConfig() -> [String: Any] {

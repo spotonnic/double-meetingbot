@@ -5,6 +5,8 @@ struct Settings {
     var supabaseURL: String
     var supabaseKey: String
     var room: String
+    var robotEmail: String
+    var robotPassword: String
     var meetURL: String
     var guestName: String
 
@@ -19,7 +21,9 @@ struct Settings {
         return Settings(
             supabaseURL: value("SupabaseURL", ""),
             supabaseKey: value("SupabaseKey", ""),
-            room: value("Room", ""),
+            room: value("Room", "double-office"),
+            robotEmail: value("RobotEmail", ""),
+            robotPassword: value("RobotPassword", ""),
             meetURL: value("MeetURL", "https://meet.google.com/"),
             guestName: value("GuestName", "Double")
         )
@@ -30,13 +34,16 @@ struct Settings {
         d.set(supabaseURL, forKey: Settings.prefix + "SupabaseURL")
         d.set(supabaseKey, forKey: Settings.prefix + "SupabaseKey")
         d.set(room, forKey: Settings.prefix + "Room")
+        d.set(robotEmail, forKey: Settings.prefix + "RobotEmail")
+        d.set(robotPassword, forKey: Settings.prefix + "RobotPassword")
         d.set(meetURL, forKey: Settings.prefix + "MeetURL")
         d.set(guestName, forKey: Settings.prefix + "GuestName")
     }
 
     var isRealtimeConfigured: Bool {
         !supabaseURL.isEmpty && !supabaseKey.isEmpty && !room.isEmpty
-            && !supabaseURL.contains("YOUR-PROJECT") && !room.contains("CHANGE-ME")
+            && !robotEmail.isEmpty && !robotPassword.isEmpty
+            && !supabaseURL.contains("YOUR-PROJECT")
     }
 
     private static func bundledConfig() -> [String: Any] {

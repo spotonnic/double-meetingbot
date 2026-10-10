@@ -1,7 +1,8 @@
 import Foundation
 
-/// Minimal Supabase Realtime client: one channel, broadcast messages only.
+/// Minimal Supabase Realtime client: one private channel, broadcast messages only.
 /// Speaks the Phoenix v1 JSON protocol over URLSessionWebSocketTask and reconnects with backoff.
+/// Joining requires a signed-in user's access token (see AuthSession); RLS on realtime.messages decides access.
 /// All callbacks run on the main queue.
 final class RealtimeChannel: NSObject {
     var onBroadcast: ((_ event: String, _ payload: [String: Any]) -> Void)?
@@ -13,7 +14,6 @@ final class RealtimeChannel: NSObject {
 
     private let url: URL
     private let topic: String
-    private let apiKey: String
     private var session: URLSession!
     private var task: URLSessionWebSocketTask?
     private var refCounter = 0
@@ -23,6 +23,7 @@ final class RealtimeChannel: NSObject {
     private var reconnectWork: DispatchWorkItem?
     private var reconnectDelay: TimeInterval = 1
     private var running = false
+    private var accessToken: String?
 
     init?(projectURL: String, apiKey: String, room: String) {
         guard var comps = URLComponents(string: projectURL.trimmingCharacters(in: .whitespaces)),
@@ -36,15 +37,19 @@ final class RealtimeChannel: NSObject {
         guard let url = comps.url else { return nil }
         self.url = url
         self.topic = "realtime:\(room)"
-        self.apiKey = apiKey
         super.init()
         session = URLSession(configuration: .default, delegate: self, delegateQueue: .main)
     }
 
-    func connect() {
-        guard !running else { return }
-        running = true
-        open()
+    /// Connects once a token is known; later calls hand the channel a refreshed token.
+    func setAccessToken(_ token: String) {
+        accessToken = token
+        if !running {
+            running = true
+            open()
+        } else if isJoined {
+            send(event: "access_token", payload: ["access_token": token])
+        }
     }
 
     func disconnect() {
@@ -97,16 +102,16 @@ final class RealtimeChannel: NSObject {
     }
 
     private func join() {
-        var payload: [String: Any] = [
+        guard let accessToken = accessToken else { return }
+        let payload: [String: Any] = [
             "config": [
                 "broadcast": ["ack": false, "self": false],
                 "presence": ["key": ""],
                 "postgres_changes": [] as [Any],
-                "private": false,
+                "private": true,
             ] as [String: Any],
+            "access_token": accessToken,
         ]
-        // Legacy anon keys are JWTs and double as the access token. New sb_publishable_ keys are not.
-        if apiKey.hasPrefix("eyJ") { payload["access_token"] = apiKey }
         let ref = nextRef()
         joinRef = ref
         send(event: "phx_join", payload: payload, ref: ref)

@@ -16,50 +16,74 @@
     }
   }
   * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
   body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
   main { max-width: 560px; margin: 0 auto; padding: 16px; display: grid; gap: 14px; }
+  header { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
   h1 { font-size: 18px; margin: 4px 0 0; }
+  .who { font-size: 13px; color: var(--muted); }
+  .who button { padding: 4px 8px; font-size: 13px; margin-left: 6px; }
   .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
-  .status { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 14px; }
+  .facts { display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; margin: 0; font-size: 14px; }
+  .facts dt { color: var(--muted); }
+  .facts dd { margin: 0; overflow-wrap: anywhere; }
   .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--muted); margin-right: 6px; vertical-align: 1px; }
   .dot.ok { background: var(--ok); } .dot.warn { background: var(--warn); } .dot.bad { background: var(--bad); }
+  .banner { border-radius: 10px; padding: 10px 12px; background: var(--pressed); font-size: 14px; }
+  .banner.bad { background: color-mix(in srgb, var(--bad) 18%, var(--panel)); }
   .pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; max-width: 300px; margin: 0 auto; }
   button { font: inherit; color: var(--text); background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px; cursor: pointer; touch-action: none; user-select: none; -webkit-user-select: none; }
-  button:hover { border-color: var(--accent); }
+  button:hover:not(:disabled) { border-color: var(--accent); }
+  button:disabled { opacity: .45; cursor: not-allowed; }
   button.active { background: var(--pressed); border-color: var(--accent); }
   button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
   .pad button { height: 72px; font-size: 22px; }
   .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
   .row > * { flex: 1 1 auto; }
   label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 4px; }
-  input[type=text], input[type=password] { width: 100%; font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
+  input[type=text] { width: 100%; font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
   input[type=range] { width: 100%; }
-  .hint { color: var(--muted); font-size: 13px; }
-  details summary { cursor: pointer; color: var(--muted); }
-  .grid { display: grid; gap: 10px; margin-top: 10px; }
+  .hint { color: var(--muted); font-size: 13px; margin: 0; }
+  .grid { display: grid; gap: 10px; }
   kbd { font: 12px ui-monospace, monospace; border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; }
+  .login { text-align: center; padding: 32px 16px; display: grid; gap: 14px; justify-items: center; }
 </style>
 </head>
 <body>
 <main>
-  <h1>Double-styrning</h1>
+  <header>
+    <h1>Double-styrning</h1>
+    <span class="who" id="who" hidden><span id="who-email"></span><button id="btn-logout">Logga ut</button></span>
+  </header>
 
-  <section class="panel status" aria-live="polite">
-    <span><span class="dot" id="dot-link"></span><span id="txt-link">Ansluter…</span></span>
-    <span><span class="dot" id="dot-robot"></span><span id="txt-robot">Robot: okänd</span></span>
-    <span id="txt-battery"></span>
-    <span id="txt-kick"></span>
+  <section class="panel login" id="view-login" hidden>
+    <p>Logga in med ditt Google-konto på glanser.com för att se och köra roboten.</p>
+    <button class="primary" id="btn-login">Logga in med Google</button>
+    <p class="hint" id="login-error"></p>
   </section>
 
-  <section class="panel">
-    <div class="pad">
-      <span></span><button data-key="up" aria-label="Framåt">▲</button><span></span>
-      <button data-key="left" aria-label="Vänster">◀</button>
-      <button data-key="stop" aria-label="Stopp">■</button>
-      <button data-key="right" aria-label="Höger">▶</button>
-      <span></span><button data-key="down" aria-label="Bakåt">▼</button><span></span>
-    </div>
-    <div class="grid">
+  <div id="view-app" class="grid" hidden>
+    <section class="panel">
+      <dl class="facts">
+        <dt>Robot</dt><dd><span class="dot" id="dot-robot"></span><span id="txt-robot">Väntar på status…</span></dd>
+        <dt>Används</dt><dd id="txt-driver">–</dd>
+        <dt>Möte</dt><dd id="txt-meeting">–</dd>
+        <dt>Senast använd</dt><dd id="txt-last">–</dd>
+        <dt>Här nu</dt><dd id="txt-online">–</dd>
+        <dt>Anslutning</dt><dd><span class="dot" id="dot-link"></span><span id="txt-link">Ansluter…</span></dd>
+      </dl>
+    </section>
+
+    <div class="banner" id="seat-banner" hidden></div>
+
+    <section class="panel grid">
+      <div class="pad">
+        <span></span><button data-key="up" aria-label="Framåt">▲</button><span></span>
+        <button data-key="left" aria-label="Vänster">◀</button>
+        <button data-key="stop" aria-label="Stopp">■</button>
+        <button data-key="right" aria-label="Höger">▶</button>
+        <span></span><button data-key="down" aria-label="Bakåt">▼</button><span></span>
+      </div>
       <div>
         <label for="speed">Fart: <span id="speed-val"></span></label>
         <input type="range" id="speed" min="20" max="100" step="5" value="60">
@@ -70,127 +94,211 @@
         <button id="btn-park">Parkera</button>
         <button id="btn-unpark">Fäll in stöd</button>
       </div>
-      <p class="hint">Tangentbord: <kbd>W A S D</kbd> eller piltangenter kör, <kbd>Shift</kbd> full fart, <kbd>R</kbd>/<kbd>F</kbd> höjer och sänker, <kbd>Mellanslag</kbd> stannar. Roboten stannar själv om styrningen tappar kontakten.</p>
-    </div>
-  </section>
+      <p class="hint">Tangentbord: <kbd>W A S D</kbd> eller piltangenter kör, <kbd>Shift</kbd> full fart, <kbd>R</kbd>/<kbd>F</kbd> höjer och sänker, <kbd>Mellanslag</kbd> stannar. En person kör åt gången. Platsen blir ledig 10 sekunder efter att föraren slutat köra. Vem som helst kan alltid stoppa.</p>
+    </section>
 
-  <section class="panel grid">
-    <div>
-      <label for="meet-url">Meet-länk för roboten</label>
-      <input type="text" id="meet-url" placeholder="https://meet.google.com/abc-defg-hij" autocomplete="off">
-    </div>
-    <div class="row">
-      <button class="primary" id="btn-meet">Öppna på roboten</button>
-      <button id="btn-join">Tryck "Gå med"</button>
-      <button id="btn-reload">Ladda om</button>
-    </div>
-    <p class="hint" id="txt-meet"></p>
-  </section>
-
-  <section class="panel">
-    <details id="settings">
-      <summary>Anslutning</summary>
-      <div class="grid">
-        <div><label for="cfg-url">Supabase URL</label><input type="text" id="cfg-url" placeholder="https://xxxx.supabase.co"></div>
-        <div><label for="cfg-key">Supabase-nyckel (anon/publishable)</label><input type="password" id="cfg-key"></div>
-        <div><label for="cfg-room">Rum</label><input type="password" id="cfg-room"></div>
-        <div class="row"><button class="primary" id="btn-save">Spara och anslut</button><button id="btn-share">Kopiera länk med inställningar</button></div>
-        <p class="hint">Länken innehåller rummet. Dela den bara med dem som ska få köra.</p>
+    <section class="panel grid">
+      <div>
+        <label for="meet-url">Meet-länk för roboten</label>
+        <input type="text" id="meet-url" placeholder="https://meet.google.com/abc-defg-hij" autocomplete="off">
       </div>
-    </details>
-  </section>
+      <div class="row">
+        <button class="primary" id="btn-meet">Öppna på roboten</button>
+        <button id="btn-join">Tryck "Gå med"</button>
+        <button id="btn-reload">Ladda om</button>
+      </div>
+    </section>
+  </div>
 </main>
 
+<script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script>
 (function () {
   'use strict';
 
+  var CFG = window.DOUBLE_CONFIG || {};
   var SEND_HZ = 10;
   var TURN_SCALE = 0.7;
-  var STORE = 'double-control';
   var STATUS_STALE_MS = 4000;
-
-  // Settings: URL hash (#url=..&key=..&room=..) wins, then localStorage.
-  function readConfig() {
-    var cfg = {};
-    try { cfg = JSON.parse(localStorage.getItem(STORE) || '{}'); } catch (e) {}
-    var hash = new URLSearchParams(location.hash.slice(1));
-    ['url', 'key', 'room'].forEach(function (k) { if (hash.get(k)) cfg[k] = hash.get(k); });
-    if (location.hash) history.replaceState(null, '', location.pathname + location.search);
-    return cfg;
-  }
-  function writeConfig(cfg) {
-    try { localStorage.setItem(STORE, JSON.stringify(cfg)); } catch (e) {}
-  }
+  var DRIVER_TIMEOUT_MS = 10000;
 
   var $ = function (id) { return document.getElementById(id); };
-  var config = readConfig();
-  writeConfig(config);
-  $('cfg-url').value = config.url || '';
-  $('cfg-key').value = config.key || '';
-  $('cfg-room').value = config.room || '';
+  var client = window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseKey, {
+    auth: { flowType: 'pkce', detectSessionInUrl: true, persistSession: true }
+  });
 
-  var client = null, channel = null, joined = false;
+  var me = null;               // { email, name }
+  var channel = null, joined = false;
   var lastStatus = null, lastStatusAt = 0;
+  var online = [];
 
-  function connect() {
-    if (channel) { channel.unsubscribe(); channel = null; }
-    joined = false;
-    renderLink();
-    if (!config.url || !config.key || !config.room) {
-      $('settings').open = true;
-      setLink('bad', 'Fyll i anslutningen nedan');
-      return;
+  // ---- Auth ----
+  function allowed(email) {
+    return typeof email === 'string' && email.toLowerCase().endsWith('@' + CFG.domain);
+  }
+
+  function showLogin(error) {
+    $('view-login').hidden = false;
+    $('view-app').hidden = true;
+    $('who').hidden = true;
+    $('login-error').textContent = error || '';
+    disconnect();
+  }
+
+  function showApp(session) {
+    var user = session.user;
+    me = {
+      email: user.email.toLowerCase(),
+      name: (user.user_metadata && (user.user_metadata.full_name || user.user_metadata.name)) || user.email
+    };
+    $('who-email').textContent = me.email;
+    $('who').hidden = false;
+    $('view-login').hidden = true;
+    $('view-app').hidden = false;
+    connect(session.access_token);
+  }
+
+  function applySession(session) {
+    if (!session) return showLogin();
+    if (!allowed(session.user && session.user.email)) {
+      client.auth.signOut();
+      return showLogin('Kontot ' + (session.user && session.user.email) + ' hör inte till ' + CFG.domain + '.');
     }
-    client = window.supabase.createClient(config.url, config.key);
-    channel = client.channel(config.room, { config: { broadcast: { self: false, ack: false } } });
+    if (!channel) showApp(session);
+  }
+
+  $('btn-login').addEventListener('click', function () {
+    client.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: location.origin + location.pathname,
+        queryParams: { hd: CFG.domain, prompt: 'select_account' }
+      }
+    });
+  });
+  $('btn-logout').addEventListener('click', function () {
+    send('stop', {});
+    client.auth.signOut().then(function () { showLogin(); });
+  });
+
+  client.auth.onAuthStateChange(function (event, session) {
+    if (event === 'SIGNED_OUT') return showLogin();
+    if (event === 'TOKEN_REFRESHED' && session) client.realtime.setAuth(session.access_token);
+    if (session) applySession(session);
+  });
+  client.auth.getSession().then(function (res) { applySession(res.data.session); });
+
+  // ---- Realtime ----
+  function connect(token) {
+    disconnect();
+    client.realtime.setAuth(token);
+    channel = client.channel(CFG.room, {
+      config: { private: true, broadcast: { self: false, ack: false }, presence: { key: me.email } }
+    });
     channel.on('broadcast', { event: 'status' }, function (msg) {
       lastStatus = msg.payload || {};
       lastStatusAt = Date.now();
-      renderStatus();
+      render();
     });
-    channel.subscribe(function (state) {
+    channel.on('presence', { event: 'sync' }, function () {
+      var state = channel.presenceState();
+      online = Object.keys(state).map(function (key) {
+        var meta = state[key][0] || {};
+        return meta.name || key;
+      });
+      render();
+    });
+    channel.subscribe(function (state, err) {
       joined = state === 'SUBSCRIBED';
-      renderLink();
-      if (joined) send('ping', {});
+      if (joined) {
+        channel.track({ name: me.name, since: Date.now() });
+        send('ping', {});
+        setLink('ok', 'Ansluten');
+      } else if (state === 'CHANNEL_ERROR') {
+        setLink('bad', 'Nekad eller nere. Försöker igen…');
+        if (err) console.warn('[realtime]', err);
+      } else if (state === 'TIMED_OUT' || state === 'CLOSED') {
+        setLink('warn', 'Ansluter…');
+      }
     });
+  }
+
+  function disconnect() {
+    if (channel) { client.removeChannel(channel); channel = null; }
+    joined = false;
   }
 
   function send(event, payload) {
     if (!channel || !joined) return;
+    payload.by = me.email;
     channel.send({ type: 'broadcast', event: event, payload: payload });
   }
 
   // ---- Rendering ----
   function setDot(id, cls) { $(id).className = 'dot ' + (cls || ''); }
   function setLink(cls, text) { setDot('dot-link', cls); $('txt-link').textContent = text; }
-  function renderLink() {
-    if (!channel) return;
-    setLink(joined ? 'ok' : 'warn', joined ? 'Styrning ansluten' : 'Ansluter…');
+
+  function ago(ms) {
+    var s = Math.max(0, Math.round((Date.now() - ms) / 1000));
+    if (s < 60) return 'nyss';
+    var m = Math.round(s / 60);
+    if (m < 60) return m + ' min sedan';
+    var h = Math.round(m / 60);
+    if (h < 24) return h + ' h sedan';
+    return new Date(ms).toLocaleString('sv-SE', { dateStyle: 'short', timeStyle: 'short' });
   }
-  function renderStatus() {
+  function shortName(email) { return email ? email.split('@')[0] : ''; }
+
+  var otherDriver = null;
+
+  function render() {
+    if (!me) return;
     var fresh = lastStatus && Date.now() - lastStatusAt < STATUS_STALE_MS;
+    var s = fresh ? lastStatus : {};
+
     if (!fresh) {
       setDot('dot-robot', 'bad');
-      $('txt-robot').textContent = 'iPaden svarar inte';
-      $('txt-battery').textContent = '';
-      $('txt-kick').textContent = '';
-      return;
+      $('txt-robot').textContent = lastStatusAt ? 'Offline (senast sedd ' + ago(lastStatusAt) + ')' : 'Offline';
+    } else if (!s.robot) {
+      setDot('dot-robot', 'warn');
+      $('txt-robot').textContent = 'iPaden är online, basen är inte ansluten';
+    } else {
+      var b = Number(s.battery || 0); if (b <= 1) b *= 100;
+      var kick = { 1: 'parkerad', 2: 'redo att köra', 3: 'parkerar', 4: 'fäller in stöd' }[s.kickstand] || '';
+      setDot('dot-robot', 'ok');
+      $('txt-robot').textContent = 'Online · batteri ' + Math.round(b) + '%' + (s.charging ? ' (laddar)' : '') + (kick ? ' · ' + kick : '');
     }
-    var s = lastStatus;
-    setDot('dot-robot', s.robot ? 'ok' : 'warn');
-    $('txt-robot').textContent = s.robot ? 'Bas ansluten' : 'iPad online, bas ej ansluten';
-    var b = Number(s.battery || 0); if (b <= 1) b *= 100;
-    $('txt-battery').textContent = s.robot ? 'Batteri ' + Math.round(b) + '%' + (s.charging ? ' (laddar)' : '') : '';
-    var kick = { 1: 'Parkerad', 2: 'Kör', 3: 'Parkerar…', 4: 'Fäller in stöd…' }[s.kickstand];
-    $('txt-kick').textContent = s.robot && kick ? kick : '';
-    $('txt-meet').textContent = s.meet ? 'Roboten visar: ' + s.meet : '';
+
+    var driver = fresh ? s.driver : null;
+    $('txt-driver').textContent = driver
+      ? (driver === me.email ? 'Du kör' : shortName(driver) + ' kör') + ' (sedan ' + ago(s.driverSince).replace(' sedan', '') + ')'
+      : (fresh ? 'Ledig' : '–');
+    $('txt-meeting').textContent = fresh ? (s.meeting ? 'I möte ' + s.meeting : 'Inte i något möte') : '–';
+    $('txt-last').textContent = s.lastUser ? shortName(s.lastUser) + ', ' + ago(s.lastUsedAt) : (fresh ? 'Aldrig' : '–');
+    $('txt-online').textContent = online.length ? online.join(', ') : '–';
+
+    otherDriver = driver && driver !== me.email && Date.now() - lastStatusAt < DRIVER_TIMEOUT_MS ? driver : null;
+    var banner = $('seat-banner');
+    if (otherDriver) {
+      banner.hidden = false;
+      banner.className = 'banner';
+      banner.textContent = shortName(otherDriver) + ' kör just nu. Du kan ta över när platsen är ledig.';
+    } else if (!fresh) {
+      banner.hidden = false;
+      banner.className = 'banner bad';
+      banner.textContent = 'Roboten svarar inte. Kontrollera att appen är öppen på iPaden.';
+    } else {
+      banner.hidden = true;
+    }
+    document.querySelectorAll('[data-key]:not([data-key=stop]), #btn-park, #btn-unpark').forEach(function (el) {
+      el.disabled = !!otherDriver || !fresh;
+    });
   }
-  setInterval(renderStatus, 1000);
+  setInterval(render, 1000);
 
   // ---- Input ----
-  var held = {};          // logical key -> true
+  var held = {};
   var keyMap = {
     ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down',
     ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right',
@@ -201,7 +309,7 @@
   function typing(e) { var t = e.target; return t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA'); }
 
   document.addEventListener('keydown', function (e) {
-    if (typing(e)) return;
+    if (typing(e) || !me) return;
     if (e.code === 'Space') { e.preventDefault(); stopAll(); return; }
     if (e.key === 'Shift') boost = true;
     var k = keyMap[e.code];
@@ -220,6 +328,7 @@
     btn.addEventListener('pointerdown', function (e) {
       e.preventDefault();
       if (k === 'stop') { stopAll(); return; }
+      if (btn.disabled) return;
       btn.setPointerCapture(e.pointerId);
       held[k] = true; highlight();
     });
@@ -248,6 +357,7 @@
   // Send at a fixed rate while anything is held; the robot stops itself 0.5 s after the last message.
   var wasMoving = false;
   setInterval(function () {
+    if (otherDriver) { wasMoving = false; return; }
     var speed = boost ? 1 : speedInput.value / 100;
     var d = (held.up ? 1 : 0) - (held.down ? 1 : 0);
     var t = (held.right ? 1 : 0) - (held.left ? 1 : 0);
@@ -269,19 +379,6 @@
   });
   $('btn-join').addEventListener('click', function () { send('join', {}); });
   $('btn-reload').addEventListener('click', function () { send('reload', {}); });
-
-  $('btn-save').addEventListener('click', function () {
-    config = { url: $('cfg-url').value.trim(), key: $('cfg-key').value.trim(), room: $('cfg-room').value.trim() };
-    writeConfig(config);
-    $('settings').open = false;
-    connect();
-  });
-  $('btn-share').addEventListener('click', function () {
-    var link = location.origin + location.pathname + '#' + new URLSearchParams(config).toString();
-    navigator.clipboard.writeText(link).then(function () { $('btn-share').textContent = 'Kopierad'; });
-  });
-
-  connect();
 })();
 </script>
 </body>

@@ -6,10 +6,20 @@ import WebKit
 final class MeetViewController: UIViewController {
     private var settings = Settings.load()
     private let robot = DMRobot()
+    private var auth: AuthSession?
     private var channel: RealtimeChannel?
+    private var authError: String?
     private var statusTimer: Timer?
     private var autoJoinTimer: Timer?
     private var autoJoinDeadline = Date.distantPast
+
+    // Who is driving. One driver at a time; the seat frees up after 10 s without commands.
+    private static let driverTimeout: TimeInterval = 10
+    private var driver: String?
+    private var driverSince = Date.distantPast
+    private var driverLastSeen = Date.distantPast
+    private var lastUser = UserDefaults.standard.string(forKey: "usage.lastUser")
+    private var lastUsedAt = UserDefaults.standard.object(forKey: "usage.lastUsedAt") as? Date
 
     private var webView: WKWebView!
     private let statusPill = UILabel()
@@ -92,14 +102,28 @@ final class MeetViewController: UIViewController {
     }
 
     private func connectChannel() {
+        auth?.stop()
+        auth = nil
         channel?.disconnect()
         channel = nil
+        authError = nil
         guard settings.isRealtimeConfigured,
+              let auth = AuthSession(projectURL: settings.supabaseURL, apiKey: settings.supabaseKey,
+                                     email: settings.robotEmail, password: settings.robotPassword),
               let channel = RealtimeChannel(projectURL: settings.supabaseURL,
                                             apiKey: settings.supabaseKey,
                                             room: settings.room) else {
             updateStatusPill()
             return
+        }
+        auth.onToken = { [weak self, weak channel] token in
+            self?.authError = nil
+            channel?.setAccessToken(token)
+            self?.updateStatusPill()
+        }
+        auth.onError = { [weak self] message in
+            self?.authError = message
+            self?.updateStatusPill()
         }
         channel.onBroadcast = { [weak self] event, payload in self?.handle(event: event, payload: payload) }
         channel.onJoinedChange = { [weak self] joined in
@@ -108,12 +132,18 @@ final class MeetViewController: UIViewController {
             self?.publishStatus()
         }
         self.channel = channel
-        channel.connect()
+        self.auth = auth
+        auth.start()
     }
 
     // MARK: - Remote commands
 
     private func handle(event: String, payload: [String: Any]) {
+        let sender = payload["by"] as? String ?? "okänd"
+        let driverCommands: Set<String> = ["drive", "park", "unpark"]
+        if driverCommands.contains(event) && !claimDriverSeat(for: sender) {
+            return
+        }
         switch event {
         case "drive":
             let drive = (payload["d"] as? NSNumber)?.floatValue ?? 0
@@ -144,6 +174,31 @@ final class MeetViewController: UIViewController {
         }
     }
 
+    /// Returns false while someone else holds the seat.
+    private func claimDriverSeat(for sender: String) -> Bool {
+        let now = Date()
+        if let current = driver, current != sender, now.timeIntervalSince(driverLastSeen) < Self.driverTimeout {
+            return false
+        }
+        if driver != sender {
+            driver = sender
+            driverSince = now
+        }
+        driverLastSeen = now
+        if now.timeIntervalSince(lastUsedAt ?? .distantPast) > 30 || lastUser != sender {
+            lastUser = sender
+            lastUsedAt = now
+            UserDefaults.standard.set(sender, forKey: "usage.lastUser")
+            UserDefaults.standard.set(now, forKey: "usage.lastUsedAt")
+        }
+        return true
+    }
+
+    private var activeDriver: String? {
+        guard let driver = driver, Date().timeIntervalSince(driverLastSeen) < Self.driverTimeout else { return nil }
+        return driver
+    }
+
     private func publishStatus() {
         guard let channel = channel, channel.isJoined else { return }
         var status: [String: Any] = [
@@ -156,6 +211,17 @@ final class MeetViewController: UIViewController {
             "ts": Int(Date().timeIntervalSince1970 * 1000),
         ]
         if let firmware = robot.firmwareVersion { status["firmware"] = firmware }
+        if let driver = activeDriver {
+            status["driver"] = driver
+            status["driverSince"] = Int(driverSince.timeIntervalSince1970 * 1000)
+        }
+        if let lastUser = lastUser, let lastUsedAt = lastUsedAt {
+            status["lastUser"] = lastUser
+            status["lastUsedAt"] = Int(lastUsedAt.timeIntervalSince1970 * 1000)
+        }
+        if let url = webView.url, url.host == "meet.google.com", url.path.count > 1 {
+            status["meeting"] = String(url.path.dropFirst())
+        }
         channel.broadcast("status", status)
     }
 
@@ -164,6 +230,8 @@ final class MeetViewController: UIViewController {
         let link: String
         if !settings.isRealtimeConfigured {
             link = "Styrning: ej konfigurerad"
+        } else if authError != nil {
+            link = "Styrning: inloggning misslyckades"
         } else {
             link = (channel?.isJoined ?? false) ? "Styrning ✓" : "Styrning …"
         }
@@ -227,7 +295,9 @@ final class MeetViewController: UIViewController {
         let fields: [(String, String)] = [
             ("Supabase URL", settings.supabaseURL),
             ("Supabase-nyckel", settings.supabaseKey),
-            ("Rum (hemlig sträng)", settings.room),
+            ("Rum", settings.room),
+            ("Robotkontots e-post", settings.robotEmail),
+            ("Robotkontots lösenord", settings.robotPassword),
             ("Meet-länk", settings.meetURL),
             ("Gästnamn", settings.guestName),
         ]
@@ -238,17 +308,20 @@ final class MeetViewController: UIViewController {
                 field.autocapitalizationType = .none
                 field.autocorrectionType = .no
                 field.clearButtonMode = .whileEditing
+                field.isSecureTextEntry = placeholder.contains("lösenord")
             }
         }
         alert.addAction(UIAlertAction(title: "Avbryt", style: .cancel))
         alert.addAction(UIAlertAction(title: "Spara", style: .default) { [weak self, weak alert] _ in
-            guard let self = self, let values = alert?.textFields?.map({ $0.text ?? "" }), values.count == 5 else { return }
-            let meetChanged = values[3] != self.settings.meetURL
+            guard let self = self, let values = alert?.textFields?.map({ $0.text ?? "" }), values.count == 7 else { return }
+            let meetChanged = values[5] != self.settings.meetURL
             self.settings.supabaseURL = values[0].trimmingCharacters(in: .whitespaces)
             self.settings.supabaseKey = values[1].trimmingCharacters(in: .whitespaces)
             self.settings.room = values[2].trimmingCharacters(in: .whitespaces)
-            self.settings.meetURL = values[3].trimmingCharacters(in: .whitespaces)
-            self.settings.guestName = values[4]
+            self.settings.robotEmail = values[3].trimmingCharacters(in: .whitespaces)
+            self.settings.robotPassword = values[4]
+            self.settings.meetURL = values[5].trimmingCharacters(in: .whitespaces)
+            self.settings.guestName = values[6]
             self.settings.save()
             self.connectChannel()
             if meetChanged { self.loadMeet(self.settings.meetURL) }

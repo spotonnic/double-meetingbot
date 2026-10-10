@@ -4,7 +4,7 @@ Gör en gammal Double 2 till en mötesrobot för Google Meet.
 
 - **ios/**: iPad-app. Visar Google Meet i helskärm (WKWebView) och kör basen via Doubles Basic Control SDK.
 - **web/index.html**: styrsida för den som kör på distans. Har körknappar, tangentbordsstyrning, höjd, parkering och möteslänk.
-- **Supabase Realtime** (broadcast) är kanalen mellan dem. Inga tabeller eller servrar behövs.
+- **Supabase Realtime** (privat kanal) är kanalen mellan dem. Åtkomsten styrs av Google-inloggning på glanser.com och av databasregler.
 
 ```
 [Webbläsare: web/index.html] --broadcast--> [Supabase Realtime] --> [iPad: DoubleMeet] --ExternalAccessory--> [Double-basen]
@@ -17,20 +17,51 @@ Den som kör sitter själv med i mötet från sin dator och har styrsidan öppen
 
 - iPad med **iPadOS 15 eller senare** (iPad Air 2, mini 4, iPad 5:e generationen eller nyare). iPad Air 1 och mini 2/3 stannar på iOS 12 och fungerar inte, eftersom kamera i webbvyn kräver nyare iOS.
 - Mac med Xcode och [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`).
-- Ett Supabase-projekt. Gratisnivån räcker.
+- Ett Supabase-projekt.
+- Admin-åtkomst till Glansers Google Workspace, för att skapa OAuth-klienten.
 
 ## 1. Supabase
 
-1. Skapa ett projekt, eller använd ett befintligt.
-2. Under *Project Settings → API*: kopiera **Project URL** och **anon**- eller **publishable**-nyckeln.
-3. Under *Realtime → Settings*: kontrollera att publika kanaler är tillåtna. Om bara privata kanaler är påslaget blir joinen nekad.
-4. Hitta på ett **rum**: en lång slumpsträng, till exempel från `openssl rand -hex 16` med `double-` framför. Rummet fungerar som lösenord. Den som känner till det kan köra roboten.
+1. Skapa projektet `double-meetingbot` i organisationen glanser, region eu-north-1.
+2. Kör `supabase/migrations/0001_realtime_access.sql` i SQL-editorn. Migrationen sätter upp åtkomstreglerna för den privata kanalen `double-office`. Bara två sorters konton släpps in:
+   - användare som loggat in med Google och har en e-post på glanser.com
+   - robotkonton som finns i `private.double_robots`
+3. Under *Realtime → Settings*: stäng av **Allow public access**. Då måste alla kanaler gå genom reglerna ovan.
+4. Skapa ett robotkonto för iPaden. Kör i SQL-editorn och byt lösenordet:
 
-## 2. iPad-appen
+```sql
+with u as (
+  insert into auth.users (instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
+                          raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+                          confirmation_token, recovery_token, email_change_token_new, email_change)
+  values ('00000000-0000-0000-0000-000000000000', gen_random_uuid(), 'authenticated', 'authenticated',
+          'double-robot@glanser.com', extensions.crypt('BYT-TILL-ETT-LÅNGT-LÖSENORD', extensions.gen_salt('bf')), now(),
+          '{"provider":"email","providers":["email"]}', '{}', now(), now(), '', '', '', '')
+  returning id, email
+), i as (
+  insert into auth.identities (id, user_id, provider_id, identity_data, provider, created_at, updated_at)
+  select gen_random_uuid(), id, id::text, jsonb_build_object('sub', id::text, 'email', email, 'email_verified', true),
+         'email', now(), now() from u
+)
+insert into private.double_robots (user_id, name) select id, 'Kontoret' from u;
+```
+
+Robotkontot loggar in med lösenord, inte med Google. Kontot släpps in för att det står i `double_robots`, inte för att adressen slutar på glanser.com.
+
+## 2. Google-inloggning (bara glanser.com)
+
+1. Gå till Google Cloud Console i Glansers Workspace-organisation. Under *Google Auth Platform → Branding/Audience* sätter du **User type: Internal**. Då kan bara konton på glanser.com logga in.
+2. Under *Clients* skapar du en **Web application** med redirect-URI `https://<projekt-ref>.supabase.co/auth/v1/callback`.
+3. I Supabase går du till *Authentication → Sign In / Providers → Google*. Slå på providern och klistra in Client ID och Client Secret.
+4. I Supabase går du till *Authentication → URL Configuration*. Sätt Site URL och Redirect URLs till styrsidans adress på Vercel.
+
+Domänen kontrolleras på tre ställen: Googles Internal-läge, styrsidan (som loggar ut andra konton direkt) och databasreglerna. Det är databasreglerna som faktiskt skyddar. Styrsidan gör bara upplevelsen tydligare.
+
+## 3. iPad-appen
 
 ```sh
 cd ios
-cp DoubleMeet/Config.example.plist DoubleMeet/Config.plist   # fyll i URL, nyckel, rum och Meet-länk
+cp DoubleMeet/Config.example.plist DoubleMeet/Config.plist   # URL, publishable key, robotkontots e-post och lösenord
 xcodegen generate
 open DoubleMeet.xcodeproj
 ```
@@ -45,11 +76,19 @@ Alla inställningar kan ändras i appen utan ombyggnad: **håll fingret 2 sekund
 
 Lägg till appen under *Inställningar → Hjälpmedel → Guidad åtkomst* och lås iPaden i appen, så kan ingen råka stänga den på kontoret.
 
-## 3. Styrsidan
+## 4. Styrsidan
 
-`web/index.html` är en fristående fil. Du kan öppna den direkt i Chrome eller lägga upp den på valfri statisk hosting, till exempel Vercel eller Netlify.
+`web/` publiceras som en statisk sajt på Vercel. Fyll i projektets URL och publishable key i `web/config.js`. Nyckeln är publik; skyddet ligger i inloggningen och databasreglerna.
 
-Fyll i URL, nyckel och rum under *Anslutning*. Med **Kopiera länk med inställningar** får du en länk som du kan skicka till kollegor. Inställningarna ligger i URL-fragmentet, sparas lokalt i webbläsaren och tas sedan bort ur adressfältet.
+Sidan visar:
+
+- om roboten är online, batterinivå och om den är parkerad
+- vem som kör just nu och sedan när
+- vilket möte roboten är i
+- vem som använde den senast
+- vilka som har styrsidan öppen
+
+En person kör åt gången. Platsen blir ledig 10 sekunder efter att föraren slutat köra. Vem som helst kan alltid trycka stopp.
 
 Styrning:
 
@@ -76,6 +115,12 @@ Om roboten är parkerad fälls stöden in automatiskt när du börjar köra.
 | Symptom | Trolig orsak |
 |---|---|
 | Statusrutan visar "Bas –" | Basen är avstängd eller inte parkopplad. Para basen under iPadens Bluetooth-inställningar och starta om appen. |
-| "Styrning …" blinkar hela tiden | Fel URL eller nyckel, eller så tillåter Realtime bara privata kanaler. Se Xcode-loggen efter `[realtime]`. |
-| Styrsidan visar "iPaden svarar inte" | Appen är i bakgrunden, eller så har iPaden och styrsidan olika rum. |
+| "Styrning: inloggning misslyckades" | Fel e-post eller lösenord för robotkontot. Se Xcode-loggen efter `[auth]`. |
+| "Styrning …" blinkar hela tiden | Robotkontot saknas i `private.double_robots`, eller så är migrationen inte körd. Se Xcode-loggen efter `[realtime]`. |
+| Styrsidan visar "Roboten svarar inte" | Appen är i bakgrunden, eller så har iPaden och styrsidan olika rum. |
+| Styrsidan säger "Nekad eller nere" | Kontot är inte ett Google-konto på glanser.com, eller så är migrationen inte körd. |
 | Meet säger att webbläsaren inte stöds | Se *Kända risker*. Testa en annan Meet-länk eller logga in med ett konto. |
+
+## Licens och rättighetshavare
+
+Se `NOTICE`. Double Basic Control SDK tillhör Double Robotics, Inc. och används under Apache 2.0 (`ios/Vendor/DoubleControlSDK-LICENSE`). Projektet har inget samband med Double Robotics.

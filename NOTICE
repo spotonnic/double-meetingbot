@@ -1,0 +1,9 @@
+DoubleMeet
+Copyright 2026 Glanser AB
+
+This product includes the Double Basic Control SDK for iOS
+(ios/Vendor/DoubleControlSDK.framework), version 0.9.1.
+Copyright (c) 2013 Double Robotics, Inc.
+Licensed under the Apache License, Version 2.0 (ios/Vendor/DoubleControlSDK-LICENSE).
+Source: https://github.com/doublerobotics/Basic-Control-SDK-iOS
+"Double" is a trademark of Double Robotics, Inc. This project is not affiliated with or endorsed by Double Robotics.
